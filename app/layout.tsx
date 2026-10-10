@@ -2,18 +2,18 @@ import type { Metadata } from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://juacolk-pixel.github.io/campo-claro-odepa/'),
-  title: 'Campo Claro | Precios mayoristas ODEPA',
-  description: 'Evolución de precios de frutas y hortalizas en los principales mercados de Chile.',
+  metadataBase: new URL('https://joacolk-maker.github.io/campo-claro-odepa/'),
+  title: 'Agroindex | Por la transparencia de precios',
+  description: 'Información mayorista clara y comparable de frutas y hortalizas en Chile.',
   openGraph: {
-    title: 'Campo Claro | Precios mayoristas ODEPA',
-    description: 'Evolución de precios de frutas y hortalizas en los principales mercados de Chile.',
-    images: [{ url: '/og.png', width: 1672, height: 941, alt: 'Campo Claro: precios del campo, sin ruido.' }],
+    title: 'Agroindex | Por la transparencia de precios',
+    description: 'Información mayorista clara y comparable de frutas y hortalizas en Chile.',
+    images: [{ url: '/og.png', width: 1672, height: 941, alt: 'Agroindex: por la transparencia de precios.' }],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Campo Claro | Precios mayoristas ODEPA',
-    description: 'Evolución de precios de frutas y hortalizas en los principales mercados de Chile.',
+    title: 'Agroindex | Por la transparencia de precios',
+    description: 'Información mayorista clara y comparable de frutas y hortalizas en Chile.',
     images: ['/og.png'],
   },
 };

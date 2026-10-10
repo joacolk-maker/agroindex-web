@@ -59,7 +59,7 @@ const allVarieties = 'Todas las variedades';
 const allQualities = 'Todas las calidades';
 const variationPeriods = [7, 14, 30, 60, 90, 180, 360];
 const monthLabels = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
-const marketColors = ['#22614d', '#b97954', '#7d8e66', '#8a6f9e', '#3f7f91', '#c19b3c', '#9a5e43', '#64748b', '#9b6b7a', '#4f8068', '#826f4f', '#5f718f'];
+const marketColors = ['#0f766e', '#e07a4f', '#4f7cac', '#7857a8', '#2f8aa3', '#c9972e', '#a85f45', '#52677d', '#9b5f7a', '#39806e', '#78684d', '#49678f'];
 const MINIMUM_REPRESENTATIVE_DAYS = 5;
 const regionCoordinates: Record<string, [number, number]> = {
   'Región de Arica y Parinacota': [-18.48, -70.31], 'Región de Coquimbo': [-29.95, -71.34], 'Región de Valparaíso': [-33.05, -71.62],
@@ -149,14 +149,14 @@ function PriceChart({ points }: { points: DailyPoint[] }) {
       const values = points.flatMap((point) => shown.map((field) => point[field])); if (!values.length) return;
       const rawMin = Math.min(...values); const rawMax = Math.max(...values); const padding = Math.max((rawMax - rawMin) * .12, rawMax * .03, 1); const yMin = Math.max(0, rawMin - padding); const yMax = rawMax + padding;
       const y = (value: number) => margin.top + (yMax - value) * chartHeight / (yMax - yMin || 1);
-      context.font = '11px Inter, system-ui, sans-serif'; context.fillStyle = '#7b8781'; context.strokeStyle = '#e5e4dc'; context.lineWidth = 1;
+      context.font = '11px Inter, system-ui, sans-serif'; context.fillStyle = '#66788a'; context.strokeStyle = '#d8e4e0'; context.lineWidth = 1;
       for (let tick = 0; tick <= 4; tick += 1) { const value = yMin + (yMax - yMin) * tick / 4; const yy = y(value); context.beginPath(); context.moveTo(margin.left, yy); context.lineTo(width - margin.right, yy); context.stroke(); context.textAlign = 'right'; context.fillText(money.format(value), margin.left - 10, yy + 4); }
       const labelCount = Math.min(6, points.length);
       for (let tick = 0; tick < labelCount; tick += 1) { const index = Math.round(tick * (points.length - 1) / Math.max(labelCount - 1, 1)); context.textAlign = tick === 0 ? 'left' : tick === labelCount - 1 ? 'right' : 'center'; context.fillText(axisLabel(points[index].date, spanDays), x(index), height - 14); }
-      if (visible.minimum && visible.maximum) { context.beginPath(); points.forEach((point, index) => index ? context.lineTo(x(index), y(point.maximum)) : context.moveTo(x(index), y(point.maximum))); for (let index = points.length - 1; index >= 0; index -= 1) context.lineTo(x(index), y(points[index].minimum)); context.closePath(); context.fillStyle = 'rgba(34,97,77,.11)'; context.fill(); }
+      if (visible.minimum && visible.maximum) { context.beginPath(); points.forEach((point, index) => index ? context.lineTo(x(index), y(point.maximum)) : context.moveTo(x(index), y(point.maximum))); for (let index = points.length - 1; index >= 0; index -= 1) context.lineTo(x(index), y(points[index].minimum)); context.closePath(); context.fillStyle = 'rgba(15,118,110,.11)'; context.fill(); }
       const line = (field: 'minimum' | 'average' | 'maximum', color: string, widthValue: number, dash: number[] = []) => { if (!visible[field]) return; context.beginPath(); context.strokeStyle = color; context.lineWidth = widthValue; context.setLineDash(dash); points.forEach((point, index) => index ? context.lineTo(x(index), y(point[field])) : context.moveTo(x(index), y(point[field]))); context.stroke(); context.setLineDash([]); };
-      line('minimum', '#b97954', 1.5, [5, 4]); line('maximum', '#7d8e66', 1.5, [5, 4]); line('average', '#22614d', 3);
-      if (hovered !== null) { const xx = x(hovered); context.strokeStyle = '#17342d80'; context.setLineDash([3, 3]); context.beginPath(); context.moveTo(xx, margin.top); context.lineTo(xx, margin.top + chartHeight); context.stroke(); context.setLineDash([]); }
+      line('minimum', '#e07a4f', 1.5, [5, 4]); line('maximum', '#4f7cac', 1.5, [5, 4]); line('average', '#0f766e', 3);
+      if (hovered !== null) { const xx = x(hovered); context.strokeStyle = '#0b253380'; context.setLineDash([3, 3]); context.beginPath(); context.moveTo(xx, margin.top); context.lineTo(xx, margin.top + chartHeight); context.stroke(); context.setLineDash([]); }
     };
     draw(); const observer = new ResizeObserver(draw); observer.observe(canvas); return () => observer.disconnect();
   }, [points, visible, hovered, spanDays]);
@@ -189,23 +189,23 @@ function VolumeChart({ points, unit }: { points: DailyPoint[]; unit: string }) {
       const maximum = Math.max(...points.map((point) => point.volume), ...trend, 1);
       const x = (index: number) => margin.left + (index + .5) * chartWidth / points.length;
       const y = (value: number) => margin.top + (maximum - value) * chartHeight / maximum;
-      context.font = '11px Inter, system-ui, sans-serif'; context.fillStyle = '#7b8781'; context.strokeStyle = '#e5e4dc';
+      context.font = '11px Inter, system-ui, sans-serif'; context.fillStyle = '#66788a'; context.strokeStyle = '#d8e4e0';
       for (let tick = 0; tick <= 4; tick += 1) {
         const value = maximum * tick / 4; const yy = y(value);
         context.beginPath(); context.moveTo(margin.left, yy); context.lineTo(width - margin.right, yy); context.stroke();
         context.textAlign = 'right'; context.fillText(number.format(Math.round(value)), margin.left - 10, yy + 4);
       }
       const barWidth = Math.max(2, Math.min(18, chartWidth / Math.max(points.length, 1) * .68));
-      context.fillStyle = 'rgba(34,97,77,.67)';
+      context.fillStyle = 'rgba(15,118,110,.67)';
       points.forEach((point, index) => context.fillRect(x(index) - barWidth / 2, y(point.volume), barWidth, margin.top + chartHeight - y(point.volume)));
-      if (trend.length > 1) { context.beginPath(); context.strokeStyle = '#17342d'; context.lineWidth = 2.5; context.lineJoin = 'round'; context.lineCap = 'round'; trend.forEach((value, index) => index ? context.lineTo(x(index), y(value)) : context.moveTo(x(index), y(value))); context.stroke(); }
+      if (trend.length > 1) { context.beginPath(); context.strokeStyle = '#0b2533'; context.lineWidth = 2.5; context.lineJoin = 'round'; context.lineCap = 'round'; trend.forEach((value, index) => index ? context.lineTo(x(index), y(value)) : context.moveTo(x(index), y(value))); context.stroke(); }
       const labelCount = Math.min(5, points.length);
       for (let tick = 0; tick < labelCount; tick += 1) {
         const index = Math.round(tick * (points.length - 1) / Math.max(labelCount - 1, 1));
         context.textAlign = tick === 0 ? 'left' : tick === labelCount - 1 ? 'right' : 'center';
         context.fillText(axisLabel(points[index].date, spanDays), x(index), height - 14);
       }
-      if (hovered !== null) { const xx = x(hovered); context.strokeStyle = '#17342d80'; context.setLineDash([3, 3]); context.beginPath(); context.moveTo(xx, margin.top); context.lineTo(xx, margin.top + chartHeight); context.stroke(); context.setLineDash([]); }
+      if (hovered !== null) { const xx = x(hovered); context.strokeStyle = '#0b253380'; context.setLineDash([3, 3]); context.beginPath(); context.moveTo(xx, margin.top); context.lineTo(xx, margin.top + chartHeight); context.stroke(); context.setLineDash([]); }
     };
     draw(); const observer = new ResizeObserver(draw); observer.observe(canvas); return () => observer.disconnect();
   }, [points, trend, hovered, spanDays]);
@@ -235,7 +235,7 @@ function MarketEvolutionChart({ points }: { points: MarketDailyPoint[] }) {
       const spanDays = Math.round((parseDate(dates.at(-1)!).getTime() - parseDate(dates[0]).getTime()) / 86400000);
       const x = (date: string) => margin.left + (dates.length === 1 ? chartWidth / 2 : dates.indexOf(date) * chartWidth / (dates.length - 1));
       const y = (value: number) => margin.top + (yMax - value) * chartHeight / (yMax - yMin || 1);
-      context.font = '11px Inter, system-ui, sans-serif'; context.fillStyle = '#7b8781'; context.strokeStyle = '#e5e4dc';
+      context.font = '11px Inter, system-ui, sans-serif'; context.fillStyle = '#66788a'; context.strokeStyle = '#d8e4e0';
       for (let tick = 0; tick <= 4; tick += 1) {
         const price = yMin + (yMax - yMin) * tick / 4; const yy = y(price);
         context.beginPath(); context.moveTo(margin.left, yy); context.lineTo(width - margin.right, yy); context.stroke();
@@ -541,13 +541,13 @@ export default function Home() {
   return (
     <main>
       <header className="topbar">
-        <a className="brand" href="#inicio" aria-label="Campo Claro, inicio"><span className="brand-mark" aria-hidden="true"><i /></span><span>Campo Claro</span></a>
+        <a className="brand" href="#inicio" aria-label="Agroindex, inicio"><span className="brand-mark" aria-hidden="true"><i /><i /><i /></span><span>Agroindex</span></a>
         <nav aria-label="Navegación principal"><a className="active" href="#evolucion">Evolución</a><a href="#mercados">Mercados</a><a href="#fuente">Fuente</a></nav>
         <span className="official-badge"><i /> Fuente oficial ODEPA</span>
       </header>
 
       <section className="hero" id="inicio">
-        <div><p className="eyebrow">Inteligencia mayorista · Chile</p><h1>Mejor información,<br /><em>mejor relación, mejor margen.</em></h1><p className="hero-copy">Una lectura clara de precio, volumen y tendencia para comparar tu producto en los mercados de tu zona antes de fijar un valor de venta.</p></div>
+        <div><p className="eyebrow">Índice de precios agrícolas · Chile</p><h1>Por la transparencia<br /><em>de precios.</em></h1><p className="hero-copy">Información mayorista clara y comparable para entender la evolución de precios, volúmenes y tendencias en los principales mercados de Chile.</p></div>
         <div className="freshness-card"><span className="pulse" /><div><strong>Snapshot actualizado: {generatedAt}</strong><small>Última fecha de mercado disponible: {maxDataDate}</small></div></div>
       </section>
 

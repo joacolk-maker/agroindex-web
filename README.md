@@ -1,4 +1,6 @@
-# Campo Claro ODEPA
+# Agroindex
+
+**Por la transparencia de precios.**
 
 Sitio público para explorar precios y volúmenes mayoristas de frutas y hortalizas publicados por ODEPA.
 
