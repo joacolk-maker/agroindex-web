@@ -1,4 +1,4 @@
-# Agroindex
+# AgroIndex
 
 **Por la transparencia de precios.**
 
