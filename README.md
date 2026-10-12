@@ -1,6 +1,6 @@
 # AgroIndex
 
-**Por la transparencia de precios.**
+**Más información. Mejor decisión.**
 
 Sitio público para explorar precios y volúmenes mayoristas de frutas y hortalizas publicados por ODEPA.
 
