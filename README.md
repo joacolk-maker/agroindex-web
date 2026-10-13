@@ -14,6 +14,8 @@ Sitio público para explorar precios y volúmenes mayoristas de frutas y hortali
 
 La interfaz carga inicialmente solo el año necesario y descarga otros archivos cuando el rango de fechas los requiere. Los filtros encadenados conservan región, mercado, subsector, producto, variedad, calidad y unidad de comercialización.
 
+La lectura de venta conserva el precio original de ODEPA y muestra además un equivalente referencial por kilo cuando la unidad declara su peso o existe un factor de conversión publicado por ODEPA. Las unidades sin una equivalencia defendible se mantienen sin convertir.
+
 ## Desarrollo local
 
 ```bash

@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
+import { getKgConversion, pricePerKgRange, type KgConversion } from './kg-equivalence';
 
 type CompactRow = [number, number, number, number, number, number, number, number, number, string, string, string, number];
 type HistoricalSnapshot = {
@@ -77,6 +78,12 @@ function parseDate(value: string) { return new Date(`${value}T12:00:00Z`); }
 function distanceKm(a: GeoPoint, b: [number, number]) { const earth = 6371; const lat1 = a.lat * Math.PI / 180; const lat2 = b[0] * Math.PI / 180; const dLat = (b[0] - a.lat) * Math.PI / 180; const dLon = (b[1] - a.lon) * Math.PI / 180; const value = Math.sin(dLat / 2) ** 2 + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLon / 2) ** 2; return earth * 2 * Math.atan2(Math.sqrt(value), Math.sqrt(1 - value)); }
 function isoDate(value: Date) { return value.toISOString().slice(0, 10); }
 function formatMetric(value: number, formatter: Intl.NumberFormat) { return Number.isFinite(value) ? formatter.format(value) : '—'; }
+function formatPricePerKg(price: number, conversion: KgConversion | null) {
+  if (!conversion || !Number.isFinite(price)) return '—';
+  const range = pricePerKgRange(price, conversion);
+  if (Math.abs(range.maximum - range.minimum) < .01) return `${money.format(range.minimum)}/kg`;
+  return `${money.format(range.minimum)}–${money.format(range.maximum)}/kg`;
+}
 function seasonDescription(category?: string) {
   if (category === 'Nula') return 'sin volumen informado';
   if (category === 'Escasa') return 'volumen bajo';
@@ -483,6 +490,7 @@ export default function Home() {
   }), [marketPoints, marketVariationDailyPoints]);
 
   const latestPoint = dailyPoints[dailyPoints.length - 1];
+  const kgConversion = useMemo(() => getKgConversion(effectiveProduct, effectiveUnit), [effectiveProduct, effectiveUnit]);
   const activity = useMemo(() => {
     const start = from ? parseDate(from) : undefined; const end = to ? parseDate(to) : undefined;
     const calendarDays = start && end ? Math.max(1, Math.round((end.getTime() - start.getTime()) / 86400000) + 1) : dailyPoints.length;
@@ -653,11 +661,13 @@ export default function Home() {
         <div className="section-heading decision-heading"><div><span className="produce-dot" /><div><p className="eyebrow">Lectura de venta</p><h2>{effectiveProduct || 'Sin producto'}</h2></div><span className="unit-pill">{effectiveVariety}</span><span className="unit-pill">{effectiveQuality}</span><span className="unit-pill">{effectiveUnit || 'Unidad pendiente'}</span></div><p>{marketLabel} · {region}<br />{latestPoint ? `Último registro: ${longDate.format(parseDate(latestPoint.date))}` : 'Sin datos para la selección'}</p></div>
         {!effectiveUnit ? <section className="decision-onboarding"><span>01</span><div><p>Comienza con una unidad de comercialización</p><h3>El precio sólo es comparable dentro del mismo formato de venta.</h3><small>Elige caja, saco, malla u otra unidad para activar la referencia, el rango observado y los mercados comparables.</small></div></section> : <>
           <section className="decision-board" aria-label="Resumen para decisión de venta">
-            <article className="price-reference"><p>Referencia de precio hoy</p><strong>{formatMetric(latestPoint?.average ?? Number.NaN, money)}</strong><span>Promedio ponderado por volumen</span><small>{latestPoint ? `Último dato disponible: ${longDate.format(parseDate(latestPoint.date))}` : 'Sin datos para la combinación seleccionada'}</small></article>
+            <article className="price-reference"><p>Referencia de precio hoy</p><strong>{formatMetric(latestPoint?.average ?? Number.NaN, money)}</strong><span>Promedio ponderado por volumen · unidad original ODEPA</span><div className={`kg-equivalent ${kgConversion ? '' : 'unavailable'}`}><span>Equivalente por kilo</span><b>{formatPricePerKg(latestPoint?.average ?? Number.NaN, kgConversion)}</b><small>{kgConversion?.detail ?? 'Sin peso confiable para convertir esta unidad.'}</small></div><small>{latestPoint ? `Último dato disponible: ${longDate.format(parseDate(latestPoint.date))}` : 'Sin datos para la combinación seleccionada'}</small></article>
             <article className="decision-stat"><p>Rango observado hoy</p><strong>{latestPoint ? `${money.format(latestPoint.minimum)} – ${money.format(latestPoint.maximum)}` : '—'}</strong><span>Mínimo y máximo informados</span></article>
             <article className="decision-stat"><p>Volumen informado</p><strong>{latestPoint ? number.format(latestPoint.volume) : '—'}</strong><span>Unidades transadas el último día</span></article>
             <article className="decision-stat market-opportunity"><p>Mercado más cercano</p><strong>{nearestMarketToday ? money.format(nearestMarketToday.point.average) : '—'}</strong><span>{nearestMarketToday ? `${nearestMarketToday.point.market} · ${Math.round(nearestMarketToday.distance)} km` : geoStatus === 'loading' ? 'Buscando ubicación…' : 'Selecciona una región o autoriza ubicación'}</span></article>
           </section>
+
+          <p className="kg-disclaimer"><strong>Referencia por kilo:</strong> facilita la comparación entre formatos, pero no corresponde al pago neto al productor. Se mantienen siempre el precio y la unidad originales de ODEPA.</p>
 
           <section className="market-reading strong" aria-label="Actividad registrada">
             <div className="confidence-label"><span className="confidence-dot" /><div><strong>Actividad registrada</strong><small>{activity.days} de {activity.calendarDays} días con precio informado · {activity.markets} mercados con operaciones</small></div></div>
@@ -696,7 +706,7 @@ export default function Home() {
         <article className="panel table-panel">
           <div className="panel-title"><div><p>Último dato disponible</p><h3>Comparación por mercado</h3></div><span>{marketPoints.length} mercados</span></div>
           <p className="comparison-note">Cada fila muestra el último día disponible de ese mercado dentro del rango. Selecciona una fila para enfocarlo en el resto del análisis.</p>
-          <div className="table-scroll"><table><thead><tr><th>Mercado</th><th>Fecha</th><th>Volumen</th><th>Mínimo</th><th>Máximo</th><th>Promedio ponderado</th><th>Var. 7d</th><th>Var. 30d</th></tr></thead><tbody>{marketRows.map((row) => <tr className={selectedMarkets.includes(row.market) ? 'selected-row' : undefined} key={row.market}><td><button className="market-button" type="button" onClick={() => { setSelectedMarkets([row.market]); document.querySelector('#evolucion')?.scrollIntoView({ behavior: 'smooth' }); }}>{row.market}</button></td><td>{longDate.format(parseDate(row.date))}</td><td>{number.format(row.volume)}</td><td>{money.format(row.minimum)}</td><td>{money.format(row.maximum)}</td><td className="price-cell">{money.format(row.average)}</td><td className={Number.isFinite(row.variation7) && row.variation7 < 0 ? 'negative-value' : 'positive-value'}>{Number.isFinite(row.variation7) ? `${row.variation7 >= 0 ? '+' : ''}${row.variation7.toFixed(1).replace('.', ',')}%` : 'No Data'}</td><td className={Number.isFinite(row.variation30) && row.variation30 < 0 ? 'negative-value' : 'positive-value'}>{Number.isFinite(row.variation30) ? `${row.variation30 >= 0 ? '+' : ''}${row.variation30.toFixed(1).replace('.', ',')}%` : 'No Data'}</td></tr>)}</tbody></table></div>
+          <div className="table-scroll"><table><thead><tr><th>Mercado</th><th>Fecha</th><th>Volumen</th><th>Mínimo</th><th>Máximo</th><th>Promedio ponderado</th><th>Equiv. $/kg</th><th>Var. 7d</th><th>Var. 30d</th></tr></thead><tbody>{marketRows.map((row) => <tr className={selectedMarkets.includes(row.market) ? 'selected-row' : undefined} key={row.market}><td><button className="market-button" type="button" onClick={() => { setSelectedMarkets([row.market]); document.querySelector('#evolucion')?.scrollIntoView({ behavior: 'smooth' }); }}>{row.market}</button></td><td>{longDate.format(parseDate(row.date))}</td><td>{number.format(row.volume)}</td><td>{money.format(row.minimum)}</td><td>{money.format(row.maximum)}</td><td className="price-cell">{money.format(row.average)}</td><td className="kg-price-cell">{formatPricePerKg(row.average, kgConversion)}</td><td className={Number.isFinite(row.variation7) && row.variation7 < 0 ? 'negative-value' : 'positive-value'}>{Number.isFinite(row.variation7) ? `${row.variation7 >= 0 ? '+' : ''}${row.variation7.toFixed(1).replace('.', ',')}%` : 'No Data'}</td><td className={Number.isFinite(row.variation30) && row.variation30 < 0 ? 'negative-value' : 'positive-value'}>{Number.isFinite(row.variation30) ? `${row.variation30 >= 0 ? '+' : ''}${row.variation30.toFixed(1).replace('.', ',')}%` : 'No Data'}</td></tr>)}</tbody></table></div>
         </article>
 
         <section className="contact-card" id="contacto">
