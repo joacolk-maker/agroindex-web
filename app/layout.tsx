@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://joacolk-maker.github.io/campo-claro-odepa/'),
+  metadataBase: new URL('https://agroindex.cl/'),
   title: 'AgroIndex | Más información. Mejor decisión.',
   description: 'Información mayorista clara y comparable de frutas y hortalizas en Chile.',
   openGraph: {
