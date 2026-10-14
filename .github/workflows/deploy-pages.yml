@@ -40,6 +40,9 @@ jobs:
       - name: Sincronizar precios desde Supabase
         run: pnpm sync:supabase
 
+      - name: Verificar que el historial permanezca inmutable
+        run: git diff --exit-code -- public/data/odepa-{2016..2025}.json
+
       - name: Calcular estacionalidad
         run: pnpm build:seasonality
 

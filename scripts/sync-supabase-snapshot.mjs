@@ -99,16 +99,25 @@ function compactSnapshot(rows, sourceRows) {
       min_data_date: dates[0],
       source_rows: sourceRows,
       aggregated_rows: compactRows.length,
+      stored_rows: compactRows.length,
       source_file_sha256: fingerprint,
+      source_rows_sha256: fingerprint,
+      fingerprint_scope: 'supabase.precios_web rows ordered by id',
+      source_system: 'supabase.precios_web',
+      source_scope: 'editorial_public_view',
     },
     dates, regions, markets, subsectors, products, varieties, qualities, units, rows: compactRows,
   };
 }
 
-async function rebuildManifest(updatedSnapshot) {
+async function rebuildManifest(updatedSnapshot, allowedSeries) {
   const current = JSON.parse(await readFile(join(dataDirectory, 'manifest.json'), 'utf8'));
   const years = [];
   const dimensions = {
+    regions: new Set(), markets: new Set(), subsectors: new Set(), products: new Set(),
+    varieties: new Set(), qualities: new Set(), units: new Set(),
+  };
+  const publishedDimensions = {
     regions: new Set(), markets: new Set(), subsectors: new Set(), products: new Set(),
     varieties: new Set(), qualities: new Set(), units: new Set(),
   };
@@ -118,6 +127,10 @@ async function rebuildManifest(updatedSnapshot) {
       ? updatedSnapshot
       : JSON.parse(await readFile(join(dataDirectory, entry.file), 'utf8'));
     const { meta } = snapshot;
+    const storedRows = snapshot.rows.length;
+    const publishedRows = snapshot.rows.reduce((count, row) => (
+      allowedSeries.has(snapshotPublicationKey(snapshot, row)) ? count + 1 : count
+    ), 0);
     years.push({
       year: meta.source_year,
       file: entry.file,
@@ -125,10 +138,18 @@ async function rebuildManifest(updatedSnapshot) {
       max_data_date: meta.max_data_date,
       source_rows: meta.source_rows,
       aggregated_rows: meta.aggregated_rows,
+      upstream_rows: meta.source_rows,
+      normalized_rows: meta.aggregated_rows,
+      stored_rows: storedRows,
+      published_rows: publishedRows,
+      source_file_sha256: meta.source_file_sha256,
     });
     const dimensionIndexes = { regions: 1, markets: 2, subsectors: 3, products: 4, varieties: 5, qualities: 6, units: 7 };
     for (const row of snapshot.rows) {
       for (const [field, index] of Object.entries(dimensionIndexes)) dimensions[field].add(snapshot[field][row[index]]);
+      if (allowedSeries.has(snapshotPublicationKey(snapshot, row))) {
+        for (const [field, index] of Object.entries(dimensionIndexes)) publishedDimensions[field].add(snapshot[field][row[index]]);
+      }
     }
   }
 
@@ -139,7 +160,16 @@ async function rebuildManifest(updatedSnapshot) {
     max_data_date: years.at(-1).max_data_date,
     source_rows: years.reduce((sum, item) => sum + item.source_rows, 0),
     aggregated_rows: years.reduce((sum, item) => sum + item.aggregated_rows, 0),
+    stored_rows: years.reduce((sum, item) => sum + item.stored_rows, 0),
+    published_rows: years.reduce((sum, item) => sum + item.published_rows, 0),
     dimension_counts: Object.fromEntries(Object.entries(dimensions).map(([field, values]) => [field, values.size])),
+    published_dimension_counts: Object.fromEntries(Object.entries(publishedDimensions).map(([field, values]) => [field, values.size])),
+    traceability: {
+      historical_snapshots_immutable: true,
+      historical_years: years.filter((item) => item.year !== DATA_YEAR).map((item) => item.year),
+      publication_filter: 'series-rules.json',
+      publication_matching_dimensions: ['subsector', 'product', 'variety', 'quality'],
+    },
     years,
   };
 }
@@ -155,19 +185,6 @@ function snapshotPublicationKey(snapshot, row) {
   ]);
 }
 
-async function filterHistoricalSnapshots(allowedSeries) {
-  const current = JSON.parse(await readFile(join(dataDirectory, 'manifest.json'), 'utf8'));
-  for (const entry of current.years) {
-    if (entry.year === DATA_YEAR) continue;
-    const path = join(dataDirectory, entry.file);
-    const snapshot = JSON.parse(await readFile(path, 'utf8'));
-    snapshot.rows = snapshot.rows.filter((row) => allowedSeries.has(snapshotPublicationKey(snapshot, row)));
-    snapshot.meta.source_rows = snapshot.rows.length;
-    snapshot.meta.aggregated_rows = snapshot.rows.length;
-    await writeFile(path, `${JSON.stringify(snapshot)}\n`);
-  }
-}
-
 const viewRows = await exactCount('precios_web');
 // La clave publicable solo puede leer la vista autorizada. Usamos ese total como
 // universo público sin abrir precios_raw ni incorporar la clave de servicio.
@@ -181,8 +198,9 @@ if (rows.length !== viewRows) throw new Error(`Se esperaban ${viewRows} filas de
 const allowedSeries = new Set(rows.map(publicationKey));
 const snapshot = compactSnapshot(rows, sourceRows);
 await writeFile(join(dataDirectory, `odepa-${DATA_YEAR}.json`), `${JSON.stringify(snapshot)}\n`);
-await filterHistoricalSnapshots(allowedSeries);
-const manifest = await rebuildManifest(snapshot);
+// Los snapshots 2016-2025 son evidencia histórica inmutable. Las reglas de
+// publicación se aplican al consultar, nunca borrando filas de esos archivos.
+const manifest = await rebuildManifest(snapshot, allowedSeries);
 await writeFile(join(dataDirectory, 'manifest.json'), `${JSON.stringify(manifest, null, 2)}\n`);
 await writeFile(join(dataDirectory, 'series-rules.json'), `${JSON.stringify({
   schema_version: 1,

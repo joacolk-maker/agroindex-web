@@ -15,7 +15,12 @@ type HistoricalSnapshot = {
     min_data_date: string;
     source_rows: number;
     aggregated_rows: number;
+    stored_rows?: number;
     source_file_sha256: string;
+    source_rows_sha256?: string;
+    fingerprint_scope?: string;
+    source_system?: string;
+    source_scope?: string;
   };
   dates: string[]; regions: string[]; markets: string[]; subsectors: string[];
   products: string[]; varieties: string[]; qualities: string[]; units: string[];
@@ -28,8 +33,12 @@ type Manifest = {
   max_data_date: string;
   source_rows: number;
   aggregated_rows: number;
+  stored_rows?: number;
+  published_rows?: number;
   dimension_counts: Record<'regions' | 'markets' | 'subsectors' | 'products' | 'varieties' | 'qualities' | 'units', number>;
-  years: { year: number; file: string; min_data_date: string; max_data_date: string; source_rows: number; aggregated_rows: number }[];
+  published_dimension_counts?: Record<'regions' | 'markets' | 'subsectors' | 'products' | 'varieties' | 'qualities' | 'units', number>;
+  traceability?: { historical_snapshots_immutable: boolean; historical_years: number[]; publication_filter: string; publication_matching_dimensions: string[] };
+  years: { year: number; file: string; min_data_date: string; max_data_date: string; source_rows: number; aggregated_rows: number; upstream_rows?: number; normalized_rows?: number; stored_rows?: number; published_rows?: number; source_file_sha256?: string }[];
 };
 type SnapshotRow = { snapshot: HistoricalSnapshot; row: CompactRow };
 type DailyPoint = { date: string; volume: number; minimum: number; maximum: number; average: number; observations: number };
