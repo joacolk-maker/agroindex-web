@@ -19,6 +19,8 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    outputs:
+      should_deploy: ${{ steps.decision.outputs.should_deploy }}
     steps:
       - name: Descargar el proyecto
         uses: actions/checkout@v4
@@ -38,36 +40,57 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Sincronizar precios desde Supabase
+        id: sync
         run: pnpm sync:supabase
 
       - name: Verificar que el historial permanezca inmutable
         run: git diff --exit-code -- public/data/odepa-{2016..2025}.json
 
+      - name: Decidir si corresponde publicar
+        id: decision
+        env:
+          DATA_CHANGED: ${{ steps.sync.outputs.changed }}
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          if [[ "$EVENT_NAME" != "schedule" || "$DATA_CHANGED" == "true" ]]; then
+            echo "should_deploy=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "should_deploy=false" >> "$GITHUB_OUTPUT"
+            echo "Sin nuevos datos: se omite una publicación idéntica."
+          fi
+
       - name: Calcular estacionalidad
+        if: steps.decision.outputs.should_deploy == 'true'
         run: pnpm build:seasonality
 
       - name: Validar snapshot público
+        if: steps.decision.outputs.should_deploy == 'true'
         run: pnpm validate:data
 
       - name: Revisar código
+        if: steps.decision.outputs.should_deploy == 'true'
         run: pnpm lint
 
       - name: Construir sitio estático
+        if: steps.decision.outputs.should_deploy == 'true'
         env:
           NEXT_PUBLIC_BASE_PATH: /campo-claro-odepa
         run: pnpm build
 
       - name: Configurar GitHub Pages
+        if: steps.decision.outputs.should_deploy == 'true'
         uses: actions/configure-pages@v5
         with:
           enablement: true
 
       - name: Empaquetar sitio
+        if: steps.decision.outputs.should_deploy == 'true'
         uses: actions/upload-pages-artifact@v3
         with:
           path: out
 
   deploy:
+    if: needs.build.outputs.should_deploy == 'true'
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}

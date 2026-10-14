@@ -27,9 +27,11 @@ pnpm dev
 
 ## Actualización diaria
 
-`pnpm sync:supabase` descarga `precios_web`, regenera `odepa-2026.json` y actualiza `manifest.json`. El workflow lo ejecuta todos los días a las 14:30 UTC, después de la carga programada de ODEPA, y luego valida 2016–2026, ejecuta lint, construye y publica GitHub Pages.
+`pnpm sync:supabase` toma como base la última instantánea pública, vuelve a consultar solamente los últimos 30 días de `precios_web`, reemplaza esa ventana y actualiza `odepa-2026.json` y `manifest.json`. El primer día de cada mes realiza automáticamente una conciliación completa. El workflow lo ejecuta todos los días a las 14:30 UTC, después de la carga programada de ODEPA, y luego valida 2016–2026, ejecuta lint, construye y publica GitHub Pages solamente cuando existen cambios.
 
 La sincronización sólo lee la vista pública de Supabase. No agrega escrituras, tablas ni almacenamiento en Supabase. El workflow detiene la publicación si detecta cualquier modificación de los archivos históricos 2016–2025.
+
+La ventana puede ajustarse con `ODEPA_SYNC_WINDOW_DAYS`; `ODEPA_SYNC_MODE=full` fuerza una conciliación completa y `ODEPA_SYNC_MODE=incremental` fuerza la ventana móvil. Si Supabase entrega una copia más antigua que la ya publicada, la ejecución falla de forma segura y no reemplaza el sitio.
 
 La web distingue `snapshot_generated_at` (cuándo se regeneró la instantánea) de `max_data_date` (la última fecha de mercado disponible). `SUPABASE_SERVICE_KEY` permanece exclusivamente en el repositorio de ingesta y nunca se incorpora al sitio ni a su JavaScript.
 
