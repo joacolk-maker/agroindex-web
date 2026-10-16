@@ -81,6 +81,9 @@ jobs:
         id: sync
         run: pnpm sync:odepa
 
+      - name: Regenerar capa normalizada
+        run: pnpm build:normalized-layer
+
       - name: Verificar que el historial permanezca inmutable
         run: git diff --exit-code -- public/data/odepa-{2016..2025}.json
 

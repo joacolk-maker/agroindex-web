@@ -257,7 +257,8 @@ async function rebuildManifest(updatedSnapshot, allowedSeries) {
       }
     }
     years.push({
-      year: snapshot.meta.source_year, file: entry.file, min_data_date: snapshot.meta.min_data_date,
+      year: snapshot.meta.source_year, file: entry.file, original_file: entry.original_file, normalized_file: entry.normalized_file,
+      min_data_date: snapshot.meta.min_data_date,
       max_data_date: snapshot.meta.max_data_date, source_rows: snapshot.meta.source_rows,
       aggregated_rows: snapshot.meta.aggregated_rows, upstream_rows: snapshot.meta.source_rows,
       normalized_rows: snapshot.meta.aggregated_rows, stored_rows: snapshot.rows.length,
