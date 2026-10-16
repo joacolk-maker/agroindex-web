@@ -50,7 +50,7 @@ jobs:
             echo "Ejecución autorizada para las 18:00 de Chile ($OFFSET_CHILE)."
           else
             echo "ejecutar=false" >> "$GITHUB_OUTPUT"
-            echo "Horario UTC alternativo omitido; no se consultará Supabase."
+            echo "Horario UTC alternativo omitido; no se consultará ODEPA."
           fi
 
   build:
@@ -77,9 +77,9 @@ jobs:
       - name: Instalar dependencias
         run: pnpm install --frozen-lockfile
 
-      - name: Sincronizar precios desde Supabase
+      - name: Sincronizar precios desde ODEPA
         id: sync
-        run: pnpm sync:supabase
+        run: pnpm sync:odepa
 
       - name: Verificar que el historial permanezca inmutable
         run: git diff --exit-code -- public/data/odepa-{2016..2025}.json

@@ -1,0 +1,106 @@
+{
+  "dataset_id": "33f10516-acbe-4446-b633-68244b9b6b26",
+  "title": "Precios mayoristas de frutas y hortalizas",
+  "description": "Información mayorista de frutas y hortalizas, correspondiente a precios y volúmenes diarios (días hábiles) de productos frescos transados en grandes cantidades en los principales mercados mayoristas del país, localizados en las regiones de Arica y Parinacota, Coquimbo, Valparaíso, Metropolitana, Maule, Ñuble, Biobío, La Araucanía y Los Lagos. La información disponible comprende las características del producto comercializado correspondiente a: variedad, calidad, unidad de comercialización y origen.",
+  "author": "Oficina de Estudios y Políticas Agrarias",
+  "maintainer": "ODEPA",
+  "license_id": "cc-by",
+  "license_title": "Creative Commons Attribution",
+  "license_url": "http://www.opendefinition.org/licenses/cc-by",
+  "metadata_modified": "2026-10-09T23:01:14.531762",
+  "columns": [
+    "Fecha",
+    "ID region",
+    "Region",
+    "Mercado",
+    "Subsector",
+    "Producto",
+    "Variedad / Tipo",
+    "Calidad",
+    "Unidad de comercializacion",
+    "Origen",
+    "Volumen",
+    "Precio minimo",
+    "Precio maximo",
+    "Precio promedio"
+  ],
+  "resources": [
+    {
+      "year": 2016,
+      "resource_id": "498937d8-f643-4b6b-b83d-cdec25a2df2a",
+      "url": "https://datos.odepa.gob.cl/dataset/33f10516-acbe-4446-b633-68244b9b6b26/resource/498937d8-f643-4b6b-b83d-cdec25a2df2a/download/precio_mayorista_fruta-hortaliza_2016.csv",
+      "last_modified": "2026-03-25T17:36:47.628519",
+      "description": "Precios mayoristas de fruta y hortaliza año 2016"
+    },
+    {
+      "year": 2017,
+      "resource_id": "b8ba76a6-72bb-406e-bc80-baa82269f50c",
+      "url": "https://datos.odepa.gob.cl/dataset/33f10516-acbe-4446-b633-68244b9b6b26/resource/b8ba76a6-72bb-406e-bc80-baa82269f50c/download/precio_mayorista_fruta-hortaliza_2017.csv",
+      "last_modified": "2026-03-25T17:36:45.485046",
+      "description": "Precios mayoristas de fruta y hortaliza año 2017"
+    },
+    {
+      "year": 2018,
+      "resource_id": "48bc89e3-c9d9-4bce-9a01-e1483768cc04",
+      "url": "https://datos.odepa.gob.cl/dataset/33f10516-acbe-4446-b633-68244b9b6b26/resource/48bc89e3-c9d9-4bce-9a01-e1483768cc04/download/precio_mayorista_fruta-hortaliza_2018.csv",
+      "last_modified": "2026-03-25T17:36:43.411566",
+      "description": "Precios mayoristas de fruta y hortaliza año 2018"
+    },
+    {
+      "year": 2019,
+      "resource_id": "eca7a423-2f5d-427a-a562-8595ee5a99f0",
+      "url": "https://datos.odepa.gob.cl/dataset/33f10516-acbe-4446-b633-68244b9b6b26/resource/eca7a423-2f5d-427a-a562-8595ee5a99f0/download/precio_mayorista_fruta-hortaliza_2019.csv",
+      "last_modified": "2026-03-25T17:36:41.382080",
+      "description": "Precios mayoristas de fruta y hortaliza año 2019"
+    },
+    {
+      "year": 2020,
+      "resource_id": "50c9762d-e2db-4c25-9c8c-64551e7e6fea",
+      "url": "https://datos.odepa.gob.cl/dataset/33f10516-acbe-4446-b633-68244b9b6b26/resource/50c9762d-e2db-4c25-9c8c-64551e7e6fea/download/precio_mayorista_fruta-hortaliza_2020.csv",
+      "last_modified": "2026-03-25T17:36:39.217864",
+      "description": "Precios mayoristas de fruta y hortaliza año 2020"
+    },
+    {
+      "year": 2021,
+      "resource_id": "a9e084df-9dac-4aee-b935-66a3f8b20504",
+      "url": "https://datos.odepa.gob.cl/dataset/33f10516-acbe-4446-b633-68244b9b6b26/resource/a9e084df-9dac-4aee-b935-66a3f8b20504/download/precio_mayorista_fruta-hortaliza_2021.csv",
+      "last_modified": "2026-04-21T17:37:33.307596",
+      "description": "Precios mayoristas de fruta y hortaliza año 2021"
+    },
+    {
+      "year": 2022,
+      "resource_id": "e218e12f-8064-4521-b4be-20015a57893b",
+      "url": "https://datos.odepa.gob.cl/dataset/33f10516-acbe-4446-b633-68244b9b6b26/resource/e218e12f-8064-4521-b4be-20015a57893b/download/precio_mayorista_fruta-hortaliza_2022.csv",
+      "last_modified": "2026-04-21T17:37:29.802298",
+      "description": "Precios mayoristas de fruta y hortaliza año 2022"
+    },
+    {
+      "year": 2023,
+      "resource_id": "10a871e2-3b41-49d3-97b7-4802ee9904d2",
+      "url": "https://datos.odepa.gob.cl/dataset/33f10516-acbe-4446-b633-68244b9b6b26/resource/10a871e2-3b41-49d3-97b7-4802ee9904d2/download/precio_mayorista_fruta-hortaliza_2023.csv",
+      "last_modified": "2026-04-21T17:37:27.281769",
+      "description": "Precios mayoristas de fruta y hortaliza año 2023"
+    },
+    {
+      "year": 2024,
+      "resource_id": "11b8b84f-f409-4fa8-9764-2c874e703cc3",
+      "url": "https://datos.odepa.gob.cl/dataset/33f10516-acbe-4446-b633-68244b9b6b26/resource/11b8b84f-f409-4fa8-9764-2c874e703cc3/download/precio_mayorista_fruta-hortaliza_2024.csv",
+      "last_modified": "2026-04-21T17:37:25.191996",
+      "description": "Precios mayoristas de fruta y hortaliza año 2024"
+    },
+    {
+      "year": 2025,
+      "resource_id": "92353fad-463e-4e85-a3ff-accb0286d0c5",
+      "url": "https://datos.odepa.gob.cl/dataset/33f10516-acbe-4446-b633-68244b9b6b26/resource/92353fad-463e-4e85-a3ff-accb0286d0c5/download/precio_mayorista_fruta-hortaliza_2025.csv",
+      "last_modified": "2026-04-21T17:37:22.604313",
+      "description": "Precios mayoristas de fruta y hortaliza año 2025"
+    },
+    {
+      "year": 2026,
+      "resource_id": "580beca0-e87e-4dd4-9e8a-0bd92773f4a6",
+      "url": "https://datos.odepa.gob.cl/dataset/33f10516-acbe-4446-b633-68244b9b6b26/resource/580beca0-e87e-4dd4-9e8a-0bd92773f4a6/download/precio_mayorista_fruta-hortaliza_2026.csv",
+      "last_modified": "2026-10-09T23:00:12.986478",
+      "description": "Precios mayoristas de fruta y hortaliza al viernes 9 de octubre de 2026"
+    }
+  ]
+}

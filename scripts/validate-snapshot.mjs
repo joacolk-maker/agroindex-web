@@ -2,8 +2,13 @@ import { readFile } from 'node:fs/promises';
 
 const dataDirectory = new URL('../public/data/', import.meta.url);
 const manifest = JSON.parse(await readFile(new URL('manifest.json', dataDirectory), 'utf8'));
+const expectedColumns = [
+  'Fecha', 'ID region', 'Region', 'Mercado', 'Subsector', 'Producto',
+  'Variedad / Tipo', 'Calidad', 'Unidad de comercializacion', 'Origen',
+  'Volumen', 'Precio minimo', 'Precio maximo', 'Precio promedio',
+];
 
-if (manifest.schema_version !== 3) {
+if (manifest.schema_version !== 4) {
   throw new Error('The historical manifest has an incompatible schema version.');
 }
 if (!manifest.snapshot_generated_at || Number.isNaN(Date.parse(manifest.snapshot_generated_at))) {
@@ -19,7 +24,7 @@ let publishedRows = 0;
 for (const entry of manifest.years) {
   const snapshot = JSON.parse(await readFile(new URL(entry.file, dataDirectory), 'utf8'));
   const meta = snapshot.meta ?? {};
-  if (meta.schema_version !== 3 || meta.source_year !== entry.year) {
+  if (meta.schema_version !== 4 || meta.source_year !== entry.year) {
     throw new Error(`The ${entry.year} snapshot has an incompatible schema.`);
   }
   if (!Array.isArray(snapshot.rows) || snapshot.rows.length === 0) {
@@ -46,8 +51,41 @@ for (const entry of manifest.years) {
   if (!meta.source_file_sha256 || !/^[a-f0-9]{64}$/i.test(meta.source_file_sha256)) {
     throw new Error(`The ${entry.year} snapshot has no valid source fingerprint.`);
   }
-  if (snapshot.rows.some((row) => !Array.isArray(row) || row.length !== 13)) {
+  if (JSON.stringify(meta.source_columns) !== JSON.stringify(expectedColumns)) {
+    throw new Error(`The ${entry.year} snapshot does not preserve the exact ODEPA columns.`);
+  }
+  if (!Array.isArray(snapshot.region_ids) || snapshot.region_ids.length === 0) {
+    throw new Error(`The ${entry.year} snapshot does not preserve ID region.`);
+  }
+  if (!Array.isArray(snapshot.origins) || snapshot.origins.length === 0) {
+    throw new Error(`The ${entry.year} snapshot does not preserve Origen.`);
+  }
+  if (snapshot.rows.some((row) => !Array.isArray(row) || row.length !== 15)) {
     throw new Error(`The ${entry.year} snapshot contains an incompatible compact row.`);
+  }
+  if (snapshot.rows.some((row) => !Number.isInteger(row[13]) || row[13] < 0 || row[13] >= snapshot.region_ids.length)) {
+    throw new Error(`The ${entry.year} snapshot contains an invalid ID region index.`);
+  }
+  if (snapshot.rows.some((row) => !Number.isInteger(row[14]) || row[14] < 0 || row[14] >= snapshot.origins.length)) {
+    throw new Error(`The ${entry.year} snapshot contains an invalid Origen index.`);
+  }
+  const indexedDimensions = [
+    ['dates', 0], ['regions', 1], ['markets', 2], ['subsectors', 3],
+    ['products', 4], ['varieties', 5], ['qualities', 6], ['units', 7],
+  ];
+  for (const [dimension, index] of indexedDimensions) {
+    if (!Array.isArray(snapshot[dimension]) || snapshot[dimension].length === 0) {
+      throw new Error(`The ${entry.year} snapshot has no ${dimension} dimension.`);
+    }
+    if (snapshot.rows.some((row) => !Number.isInteger(row[index]) || row[index] < 0 || row[index] >= snapshot[dimension].length)) {
+      throw new Error(`The ${entry.year} snapshot contains an invalid ${dimension} index.`);
+    }
+  }
+  if (snapshot.rows.some((row) => !Number.isFinite(row[8]) || row[8] < 0)) {
+    throw new Error(`The ${entry.year} snapshot contains an invalid volume.`);
+  }
+  if (snapshot.rows.some((row) => [row[9], row[10], row[11]].some((value) => value === '' || !Number.isFinite(Number(value))))) {
+    throw new Error(`The ${entry.year} snapshot contains an invalid price.`);
   }
   if (!snapshot.dates.every((date) => date.startsWith(`${entry.year}-`))) {
     throw new Error(`The ${entry.year} snapshot contains dates from another year.`);

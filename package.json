@@ -10,7 +10,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint . --ignore-pattern out --ignore-pattern .next",
-    "sync:supabase": "node scripts/sync-supabase-snapshot.mjs",
+    "sync:odepa": "node scripts/sync-odepa-snapshot.mjs",
+    "sync:supabase": "node scripts/sync-odepa-snapshot.mjs",
+    "rebuild:odepa-history": "python3 scripts/rebuild_odepa_history.py",
     "validate:data": "node scripts/validate-snapshot.mjs",
     "build:seasonality": "node scripts/build-seasonality.mjs"
   },

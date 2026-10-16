@@ -1,18 +1,55 @@
 {
-  "schema_version": 3,
-  "snapshot_generated_at": "2026-09-24T01:12:04.319Z",
+  "schema_version": 4,
+  "snapshot_generated_at": "2026-10-15T21:56:36.394Z",
   "min_data_date": "2016-01-04",
-  "max_data_date": "2026-09-17",
-  "source_rows": 2040617,
-  "aggregated_rows": 1482634,
+  "max_data_date": "2026-10-09",
+  "source_rows": 2059307,
+  "aggregated_rows": 2059307,
+  "stored_rows": 2059307,
+  "published_rows": 959000,
   "dimension_counts": {
-    "regions": 11,
+    "regions": 9,
     "markets": 12,
     "subsectors": 2,
-    "products": 70,
-    "varieties": 125,
-    "qualities": 39,
-    "units": 107
+    "products": 83,
+    "varieties": 364,
+    "qualities": 75,
+    "units": 204,
+    "region_ids": 9,
+    "origins": 91
+  },
+  "published_dimension_counts": {
+    "regions": 9,
+    "markets": 12,
+    "subsectors": 2,
+    "products": 21,
+    "varieties": 37,
+    "qualities": 22,
+    "units": 113,
+    "region_ids": 9,
+    "origins": 75
+  },
+  "traceability": {
+    "historical_snapshots_immutable": true,
+    "historical_years": [
+      2016,
+      2017,
+      2018,
+      2019,
+      2020,
+      2021,
+      2022,
+      2023,
+      2024,
+      2025
+    ],
+    "publication_filter": "series-rules.json",
+    "publication_matching_dimensions": [
+      "subsector",
+      "product",
+      "variety",
+      "quality"
+    ]
   },
   "years": [
     {
@@ -21,7 +58,12 @@
       "min_data_date": "2016-01-04",
       "max_data_date": "2016-12-30",
       "source_rows": 195175,
-      "aggregated_rows": 101720
+      "aggregated_rows": 195175,
+      "upstream_rows": 195175,
+      "normalized_rows": 195175,
+      "stored_rows": 195175,
+      "published_rows": 86457,
+      "source_file_sha256": "704161cd52ba44fddcbb73246f941aebca85ad25ac4eb9fe821f7e625446fb47"
     },
     {
       "year": 2017,
@@ -29,7 +71,12 @@
       "min_data_date": "2017-01-03",
       "max_data_date": "2017-12-29",
       "source_rows": 183733,
-      "aggregated_rows": 105515
+      "aggregated_rows": 183733,
+      "upstream_rows": 183733,
+      "normalized_rows": 183733,
+      "stored_rows": 183733,
+      "published_rows": 83244,
+      "source_file_sha256": "ef9bd5240532cd21c523e32140c38de50774f4e80ab499e5f915f5a9f6661ee8"
     },
     {
       "year": 2018,
@@ -37,7 +84,12 @@
       "min_data_date": "2018-01-02",
       "max_data_date": "2018-12-31",
       "source_rows": 188088,
-      "aggregated_rows": 119824
+      "aggregated_rows": 188088,
+      "upstream_rows": 188088,
+      "normalized_rows": 188088,
+      "stored_rows": 188088,
+      "published_rows": 86182,
+      "source_file_sha256": "b3fb804ca32ca61d273d8813061e130ead011d26f135b1963066e93bc7996dc9"
     },
     {
       "year": 2019,
@@ -45,7 +97,12 @@
       "min_data_date": "2019-01-02",
       "max_data_date": "2019-12-31",
       "source_rows": 191133,
-      "aggregated_rows": 130706
+      "aggregated_rows": 191133,
+      "upstream_rows": 191133,
+      "normalized_rows": 191133,
+      "stored_rows": 191133,
+      "published_rows": 88409,
+      "source_file_sha256": "95088f0b1bc824590f00755acfb16dae37f474715beb79204078714fff44eb86"
     },
     {
       "year": 2020,
@@ -53,7 +110,12 @@
       "min_data_date": "2020-01-02",
       "max_data_date": "2020-12-31",
       "source_rows": 192883,
-      "aggregated_rows": 138947
+      "aggregated_rows": 192883,
+      "upstream_rows": 192883,
+      "normalized_rows": 192883,
+      "stored_rows": 192883,
+      "published_rows": 89126,
+      "source_file_sha256": "60d7b2fa3642b4799d1d717b71a5d160746d888eaaa700cefbfc1d1961f141c6"
     },
     {
       "year": 2021,
@@ -61,7 +123,12 @@
       "min_data_date": "2021-01-04",
       "max_data_date": "2021-12-31",
       "source_rows": 194776,
-      "aggregated_rows": 144298
+      "aggregated_rows": 194776,
+      "upstream_rows": 194776,
+      "normalized_rows": 194776,
+      "stored_rows": 194776,
+      "published_rows": 89115,
+      "source_file_sha256": "28d7215cb1fe7bcf3f3d841acc0cd3988183e6f0b3aa2b1a9cfe61c8298bef7a"
     },
     {
       "year": 2022,
@@ -69,7 +136,12 @@
       "min_data_date": "2022-01-03",
       "max_data_date": "2022-12-30",
       "source_rows": 188313,
-      "aggregated_rows": 145154
+      "aggregated_rows": 188313,
+      "upstream_rows": 188313,
+      "normalized_rows": 188313,
+      "stored_rows": 188313,
+      "published_rows": 88043,
+      "source_file_sha256": "5d34b468950050685e2e55bf0ec79a2b91899530a89a76b88da1c405aef9ddfa"
     },
     {
       "year": 2023,
@@ -77,7 +149,12 @@
       "min_data_date": "2023-01-03",
       "max_data_date": "2023-12-29",
       "source_rows": 188192,
-      "aggregated_rows": 150404
+      "aggregated_rows": 188192,
+      "upstream_rows": 188192,
+      "normalized_rows": 188192,
+      "stored_rows": 188192,
+      "published_rows": 91238,
+      "source_file_sha256": "0b5df3e213ee54a8f2bf56f21efc3699cbe8f7f30454bfdbeb996b2be98fbcc8"
     },
     {
       "year": 2024,
@@ -85,23 +162,38 @@
       "min_data_date": "2024-01-02",
       "max_data_date": "2024-12-31",
       "source_rows": 189754,
-      "aggregated_rows": 153714
+      "aggregated_rows": 189754,
+      "upstream_rows": 189754,
+      "normalized_rows": 189754,
+      "stored_rows": 189754,
+      "published_rows": 90998,
+      "source_file_sha256": "c55955b9135ae02c1a46aad73f842a965f891646d8a41c0465c8e6c67be29cee"
     },
     {
       "year": 2025,
       "file": "odepa-2025.json",
-      "min_data_date": "2025-01-02",
+      "min_data_date": "2025-01-01",
       "max_data_date": "2025-12-31",
       "source_rows": 202029,
-      "aggregated_rows": 165811
+      "aggregated_rows": 202029,
+      "upstream_rows": 202029,
+      "normalized_rows": 202029,
+      "stored_rows": 202029,
+      "published_rows": 96267,
+      "source_file_sha256": "fc7c7e30de9d940f48a16c69202fd66a77708ecb12ecc70a7c018665c72c2a18"
     },
     {
       "year": 2026,
       "file": "odepa-2026.json",
       "min_data_date": "2026-01-02",
-      "max_data_date": "2026-09-17",
-      "source_rows": 126541,
-      "aggregated_rows": 126541
+      "max_data_date": "2026-10-09",
+      "source_rows": 145231,
+      "aggregated_rows": 145231,
+      "upstream_rows": 145231,
+      "normalized_rows": 145231,
+      "stored_rows": 145231,
+      "published_rows": 69921,
+      "source_file_sha256": "6fb3098ba16ab8529c005fa78bf16650e24b6c30ec5f8913af3050bf8c9273ca"
     }
   ]
 }

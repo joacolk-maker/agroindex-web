@@ -3,10 +3,10 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import { getKgConversion, pricePerKgRange, type KgConversion } from './kg-equivalence';
 
-type CompactRow = [number, number, number, number, number, number, number, number, number, string, string, string, number];
+type CompactRow = [number, number, number, number, number, number, number, number, number, string, string, string, number, number, number];
 type HistoricalSnapshot = {
   meta: {
-    schema_version: 3;
+    schema_version: 4;
     source_url: string;
     source_year: number;
     snapshot_generated_at: string;
@@ -24,10 +24,11 @@ type HistoricalSnapshot = {
   };
   dates: string[]; regions: string[]; markets: string[]; subsectors: string[];
   products: string[]; varieties: string[]; qualities: string[]; units: string[];
+  region_ids: string[]; origins: string[];
   rows: CompactRow[];
 };
 type Manifest = {
-  schema_version: 3;
+  schema_version: 4;
   snapshot_generated_at: string;
   min_data_date: string;
   max_data_date: string;
@@ -35,8 +36,8 @@ type Manifest = {
   aggregated_rows: number;
   stored_rows?: number;
   published_rows?: number;
-  dimension_counts: Record<'regions' | 'markets' | 'subsectors' | 'products' | 'varieties' | 'qualities' | 'units', number>;
-  published_dimension_counts?: Record<'regions' | 'markets' | 'subsectors' | 'products' | 'varieties' | 'qualities' | 'units', number>;
+  dimension_counts: Record<'regions' | 'markets' | 'subsectors' | 'products' | 'varieties' | 'qualities' | 'units' | 'region_ids' | 'origins', number>;
+  published_dimension_counts?: Record<'regions' | 'markets' | 'subsectors' | 'products' | 'varieties' | 'qualities' | 'units' | 'region_ids' | 'origins', number>;
   traceability?: { historical_snapshots_immutable: boolean; historical_years: number[]; publication_filter: string; publication_matching_dimensions: string[] };
   years: { year: number; file: string; min_data_date: string; max_data_date: string; source_rows: number; aggregated_rows: number; upstream_rows?: number; normalized_rows?: number; stored_rows?: number; published_rows?: number; source_file_sha256?: string }[];
 };
@@ -305,7 +306,7 @@ export default function Home() {
     fetch(`${basePath}/data/manifest.json`)
       .then(async (response) => { if (!response.ok) throw new Error('No se pudo cargar el manifiesto'); return await response.json() as Manifest; })
       .then((data) => {
-        if (data.schema_version !== 3) throw new Error('Versión de datos incompatible');
+        if (data.schema_version !== 4) throw new Error('Versión de datos incompatible');
         setManifest(data);
         const initialStart = parseDate(data.max_data_date);
         initialStart.setUTCDate(initialStart.getUTCDate() - 89);
@@ -369,7 +370,7 @@ export default function Home() {
       fetch(`${basePath}/data/${item.file}`)
         .then(async (response) => { if (!response.ok) throw new Error(`No se pudo cargar ${item.year}`); return await response.json() as HistoricalSnapshot; })
         .then((data) => {
-          if (data.meta.schema_version !== 3) throw new Error('Versión anual incompatible');
+          if (data.meta.schema_version !== 4) throw new Error('Versión anual incompatible');
           setSnapshots((current) => ({ ...current, [item.year]: data }));
         })
         .catch(() => { requestedYears.current.delete(item.year); setLoadError(true); });
