@@ -17,7 +17,7 @@ from pathlib import Path
 
 PACKAGE_ID = "33f10516-acbe-4446-b633-68244b9b6b26"
 PACKAGE_URL = f"https://datos.odepa.gob.cl/api/3/action/package_show?id={PACKAGE_ID}"
-PUBLIC_RULES_URL = "https://joacolk-maker.github.io/campo-claro-odepa/data/series-rules.json"
+PUBLIC_RULES_URL = "https://joacolk-maker.github.io/agroindex-web/data/series-rules.json"
 EXPECTED_COLUMNS = [
     "Fecha",
     "ID region",

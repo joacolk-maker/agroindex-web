@@ -115,7 +115,7 @@ jobs:
       - name: Construir sitio estático
         if: steps.decision.outputs.should_deploy == 'true'
         env:
-          NEXT_PUBLIC_BASE_PATH: /campo-claro-odepa
+          NEXT_PUBLIC_BASE_PATH: /agroindex-web
         run: pnpm build
 
       - name: Configurar GitHub Pages

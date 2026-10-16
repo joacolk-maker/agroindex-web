@@ -9,7 +9,7 @@ const DATA_YEAR = 2026;
 const PAGE_SIZE = 1000;
 const WINDOW_DAYS = Number(process.env.ODEPA_SYNC_WINDOW_DAYS ?? 30);
 const REQUESTED_MODE = process.env.ODEPA_SYNC_MODE ?? 'auto';
-const PUBLIC_DATA_BASE_URL = (process.env.PUBLIC_DATA_BASE_URL ?? 'https://joacolk-maker.github.io/campo-claro-odepa/data').replace(/\/$/, '');
+const PUBLIC_DATA_BASE_URL = (process.env.PUBLIC_DATA_BASE_URL ?? 'https://joacolk-maker.github.io/agroindex-web/data').replace(/\/$/, '');
 const dataDirectory = join(process.cwd(), 'public/data');
 const EXPECTED_COLUMNS = [
   'Fecha', 'ID region', 'Region', 'Mercado', 'Subsector', 'Producto',
