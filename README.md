@@ -18,6 +18,8 @@ La interfaz carga inicialmente solo el año necesario y descarga otros archivos 
 
 `pnpm rebuild:odepa-history` reconstruye 2016–2026 directamente desde los recursos anuales oficiales, valida las 14 columnas exactas y genera `odepa-resources.json` con el inventario, licencia y metadatos del catálogo. Este comando es una operación controlada de reconstrucción histórica; la actualización diaria no modifica 2016–2025.
 
+El inventario documenta la frecuencia oficial como diaria en días hábiles y conserva como metodología la descripción publicada por ODEPA: precios y volúmenes de productos frescos transados en grandes cantidades en los principales mercados mayoristas del país.
+
 La lectura de venta conserva el precio original de ODEPA y muestra además un equivalente referencial por kilo cuando la unidad declara su peso o existe un factor de conversión publicado por ODEPA. Las unidades sin una equivalencia defendible se mantienen sin convertir.
 
 ## Desarrollo local
