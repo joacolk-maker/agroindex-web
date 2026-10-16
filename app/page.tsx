@@ -62,7 +62,7 @@ const number = new Intl.NumberFormat('es-CL');
 const shortDate = new Intl.DateTimeFormat('es-CL', { day: '2-digit', month: 'short', timeZone: 'UTC' });
 const longDate = new Intl.DateTimeFormat('es-CL', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'America/Santiago' });
 const basePath = process.env.NEXT_PUBLIC_BASE_PATH ?? '';
-const contactEmail = process.env.NEXT_PUBLIC_CONTACT_EMAIL?.trim() || 'joacolk@gmail.com';
+const contactEndpoint = 'https://formsubmit.co/ajax/contacto@agroindex.cl';
 const allRegions = 'Todas las regiones';
 const allMarkets = 'Todos los mercados';
 const allSubsectors = 'Todos los subsectores';
@@ -301,6 +301,8 @@ export default function Home() {
   const [from, setFrom] = useState('');
   const [to, setTo] = useState('');
   const [contactStatus, setContactStatus] = useState('');
+  const [contactStatusType, setContactStatusType] = useState<'success' | 'error' | ''>('');
+  const [contactSubmitting, setContactSubmitting] = useState(false);
 
   useEffect(() => {
     fetch(`${basePath}/data/manifest.json`)
@@ -573,17 +575,40 @@ export default function Home() {
   const generatedAt = manifest ? longDate.format(new Date(manifest.snapshot_generated_at)) : '—';
   const maxDataDate = manifest ? longDate.format(parseDate(manifest.max_data_date)) : '—';
 
-  const handleContactSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const handleContactSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const form = new FormData(event.currentTarget);
-    if (!contactEmail) {
-      setContactStatus('Vista local: el formulario está listo. Antes de publicar definiremos el correo de destino.');
-      return;
+    const formElement = event.currentTarget;
+    const form = new FormData(formElement);
+    setContactSubmitting(true);
+    setContactStatus('');
+    setContactStatusType('');
+
+    try {
+      const response = await fetch(contactEndpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify({
+          nombre: String(form.get('nombre') || ''),
+          empresa: String(form.get('empresa') || 'No informada'),
+          email: String(form.get('email') || ''),
+          solicitud: String(form.get('solicitud') || ''),
+          _subject: `Solicitud AgroIndex · ${String(form.get('empresa') || form.get('nombre') || 'Contacto')}`,
+          _template: 'table',
+          _honey: String(form.get('_honey') || ''),
+          _url: window.location.href,
+        }),
+      });
+      const result = await response.json().catch(() => null) as { success?: boolean | string } | null;
+      if (!response.ok || result?.success === false || result?.success === 'false') throw new Error('No se pudo enviar');
+      formElement.reset();
+      setContactStatusType('success');
+      setContactStatus('Mensaje enviado correctamente. Gracias por contactarnos.');
+    } catch {
+      setContactStatusType('error');
+      setContactStatus('No pudimos enviar tu mensaje. Intenta nuevamente en unos minutos.');
+    } finally {
+      setContactSubmitting(false);
     }
-    const subject = `Solicitud AgroIndex · ${String(form.get('empresa') || form.get('nombre') || 'Contacto')}`;
-    const body = [`Nombre: ${form.get('nombre')}`, `Empresa: ${form.get('empresa') || '—'}`, `Email: ${form.get('email')}`, '', String(form.get('solicitud'))].join('\n');
-    window.location.href = `mailto:${contactEmail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-    setContactStatus('Abrimos tu correo para completar el envío.');
   };
 
   if (loadError) return <main className="state-page"><h1>No pudimos cargar el historial.</h1><p>La fuente quedó temporalmente indisponible. Intenta nuevamente.</p></main>;
@@ -722,12 +747,13 @@ export default function Home() {
         <section className="contact-card" id="contacto">
           <div className="contact-copy"><p className="eyebrow">Contacto</p><p>Cuéntanos brevemente qué información necesitas y te responderemos a la brevedad.</p></div>
           <form className="contact-form" onSubmit={handleContactSubmit}>
+            <input className="contact-honey" name="_honey" type="text" tabIndex={-1} autoComplete="off" aria-hidden="true" />
             <label>Nombre<input name="nombre" type="text" autoComplete="name" required /></label>
             <label>Empresa<input name="empresa" type="text" autoComplete="organization" /></label>
             <label>Email<input name="email" type="email" autoComplete="email" required /></label>
             <label className="contact-request">Solicitud<textarea name="solicitud" rows={3} required /></label>
-            <button type="submit">Enviar solicitud <span>→</span></button>
-            {contactStatus && <p className="contact-status" role="status">{contactStatus}</p>}
+            <button type="submit" disabled={contactSubmitting}>{contactSubmitting ? 'Enviando…' : 'Enviar solicitud'} <span>→</span></button>
+            {contactStatus && <p className={`contact-status ${contactStatusType}`} role={contactStatusType === 'error' ? 'alert' : 'status'}>{contactStatus}</p>}
           </form>
         </section>
       </section>

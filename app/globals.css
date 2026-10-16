@@ -100,4 +100,8 @@ body{background:radial-gradient(circle at 78% 5%,#dceee8 0,transparent 28%),line
 .contact-form input,.contact-form textarea{padding:9px 10px;font-size:11px}
 .contact-form textarea{min-height:58px}
 .contact-form button{padding:10px 12px;font-size:10px}
+.contact-form button:disabled{opacity:.65;cursor:wait}
+.contact-honey{position:absolute!important;left:-10000px!important;width:1px!important;height:1px!important;overflow:hidden!important}
+.contact-status.success{color:#08796b}
+.contact-status.error{color:#b84f38}
 @media(max-width:560px){.contact-card{padding:20px 18px;gap:22px}}
