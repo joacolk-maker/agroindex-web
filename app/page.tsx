@@ -39,7 +39,7 @@ type Manifest = {
   dimension_counts: Record<'regions' | 'markets' | 'subsectors' | 'products' | 'varieties' | 'qualities' | 'units' | 'region_ids' | 'origins', number>;
   published_dimension_counts?: Record<'regions' | 'markets' | 'subsectors' | 'products' | 'varieties' | 'qualities' | 'units' | 'region_ids' | 'origins', number>;
   traceability?: { historical_snapshots_immutable: boolean; historical_years: number[]; publication_filter: string; publication_matching_dimensions: string[] };
-  years: { year: number; file: string; min_data_date: string; max_data_date: string; source_rows: number; aggregated_rows: number; upstream_rows?: number; normalized_rows?: number; stored_rows?: number; published_rows?: number; source_file_sha256?: string }[];
+  years: { year: number; file: string; original_file?: string; normalized_file?: string; min_data_date: string; max_data_date: string; source_rows: number; aggregated_rows: number; upstream_rows?: number; normalized_rows?: number; stored_rows?: number; published_rows?: number; source_file_sha256?: string }[];
 };
 type SnapshotRow = { snapshot: HistoricalSnapshot; row: CompactRow };
 type DailyPoint = { date: string; volume: number; minimum: number; maximum: number; average: number; observations: number };
@@ -367,7 +367,7 @@ export default function Home() {
     requiredYears.forEach((item) => {
       if (snapshots[item.year] || requestedYears.current.has(item.year)) return;
       requestedYears.current.add(item.year);
-      fetch(`${basePath}/data/${item.file}`)
+      fetch(`${basePath}/data/${item.normalized_file ?? item.file}`)
         .then(async (response) => { if (!response.ok) throw new Error(`No se pudo cargar ${item.year}`); return await response.json() as HistoricalSnapshot; })
         .then((data) => {
           if (data.meta.schema_version !== 4) throw new Error('Versión anual incompatible');
