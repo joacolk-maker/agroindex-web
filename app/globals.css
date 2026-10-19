@@ -105,6 +105,3 @@ body{background:radial-gradient(circle at 78% 5%,#dceee8 0,transparent 28%),line
 .contact-status.success{color:#08796b}
 .contact-status.error{color:#b84f38}
 @media(max-width:560px){.contact-card{padding:20px 18px;gap:22px}}
-
-/* Divisor entre unidad comercial y rango de fechas */
-.filters>label:nth-child(4){border-right:1px solid var(--line)!important}
