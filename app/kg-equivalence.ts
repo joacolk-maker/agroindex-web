@@ -76,13 +76,13 @@ export function getKgConversion(product: string, commercialUnit: string): KgConv
   const kilogramRange = unit.match(/(\d+(?:[.,]\d+)?)\s+a\s+(\d+(?:[.,]\d+)?)\s+kilos?/);
   if (kilogramRange) {
     const minKg = decimal(kilogramRange[1]); const maxKg = decimal(kilogramRange[2]);
-    return { minKg, maxKg, source: 'declared', detail: `Peso declarado por ODEPA: ${minKg.toLocaleString('es-CL')}–${maxKg.toLocaleString('es-CL')} kg.` };
+    return { minKg, maxKg, source: 'declared', detail: `Peso declarado: ${minKg.toLocaleString('es-CL')}–${maxKg.toLocaleString('es-CL')} kg.` };
   }
 
   const gramRange = unit.match(/(\d+(?:[.,]\d+)?)\s+a\s+(\d+(?:[.,]\d+)?)\s+gramos?/);
   if (gramRange) {
     const minKg = decimal(gramRange[1]) / 1000; const maxKg = decimal(gramRange[2]) / 1000;
-    return { minKg, maxKg, source: 'declared', detail: `Peso declarado por ODEPA: ${gramRange[1]}–${gramRange[2]} gramos.` };
+    return { minKg, maxKg, source: 'declared', detail: `Peso declarado: ${gramRange[1]}–${gramRange[2]} gramos.` };
   }
 
   const kilograms = unit.match(/(\d+(?:[.,]\d+)?)\s+kilos?/);
@@ -97,16 +97,10 @@ export function getKgConversion(product: string, commercialUnit: string): KgConv
     return { minKg: value, maxKg: value, source: 'declared', detail: `${grams[1]} gramos declarados por unidad comercial.` };
   }
 
-  const count = countedUnits(unit);
-  const kgPerUnit = odepaKgPerUnit[product];
-  if (!count || !kgPerUnit) return null;
-  const totalKg = count * kgPerUnit;
-  return {
-    minKg: totalKg,
-    maxKg: totalKg,
-    source: 'odepa-factor',
-    detail: `Estimación ODEPA: ${count} × ${kgPerUnit.toLocaleString('es-CL')} kg = ${totalKg.toLocaleString('es-CL')} kg.`,
-  };
+  // Las unidades contadas (cajas, atados, matas, etc.) no se convierten
+  // automáticamente: sin un peso declarado en la unidad original no hay
+  // equivalencia confiable para informar al usuario.
+  return null;
 }
 
 export function pricePerKgRange(price: number, conversion: KgConversion) {
