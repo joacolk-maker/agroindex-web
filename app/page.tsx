@@ -718,7 +718,8 @@ export default function Home() {
         {!hasSearched ? <div className="search-prompt"><strong>Selecciona los filtros y presiona Buscar</strong><span>Los indicadores y gráficos aparecerán aquí después de realizar una consulta.</span></div> : <>
         {!dataReady && <div className="data-loading"><span className="loader" /> Cargando {requiredYears.length === 1 ? requiredYears[0]?.year : `${requiredYears[0]?.year}–${requiredYears[requiredYears.length - 1]?.year}`}…</div>}
         {dataReady && !effectiveUnit && <div className="selection-prompt">Selecciona una unidad de comercialización para calcular precios y volúmenes sin mezclar formatos.</div>}
-        <div className="section-heading decision-heading"><div><span className="produce-dot" /><div><div className="summary-label"><p className="eyebrow">Resumen de mercado</p><img className="summary-logo" src="/agroindex-logo-horizontal.svg" alt="AgroIndex" /></div><h2>{effectiveProduct || 'Sin producto'} {effectiveVariety} {effectiveQuality}, {effectiveUnit || 'pendiente'}</h2></div></div></div>
+        <div className="print-report">
+        <div className="section-heading decision-heading"><div><span className="produce-dot" /><div><div className="summary-label"><p className="eyebrow">Resumen de mercado</p><img className="summary-logo" src="/agroindex-logo-horizontal.svg" alt="AgroIndex" /></div><h2>{effectiveProduct || 'Sin producto'} {effectiveVariety} {effectiveQuality}, {effectiveUnit || 'pendiente'}</h2></div></div><div className="report-actions"><button className="print-button" type="button" onClick={() => window.print()}>Imprimir</button></div></div>
         {!effectiveUnit ? <section className="decision-onboarding"><span>01</span><div><p>Comienza con una unidad de comercialización</p><h3>El precio sólo es comparable dentro del mismo formato de venta.</h3><small>Elige caja, saco, malla u otra unidad para activar la referencia, el rango observado y los mercados comparables.</small></div></section> : <>
           <section className="decision-board" aria-label="Resumen para decisión de venta">
             <article className="price-reference"><p>Precio promedio ponderado al {latestPoint ? longDate.format(parseDate(latestPoint.date)) : 'último dato disponible'}</p><strong>{formatMetric(latestPoint?.average ?? Number.NaN, money)}</strong><div className={`kg-equivalent ${kgConversion ? '' : 'unavailable'}`}><span>{equivalentLabel(effectiveUnit)}</span><b>{formatEquivalentPrice(latestPoint?.average ?? Number.NaN, effectiveUnit, kgConversion)}</b></div></article>
@@ -770,6 +771,8 @@ export default function Home() {
           <p className="comparison-note">Participación del volumen informado para la selección actual.</p>
           <div className="origin-share-list">{originShares.map((item) => <div className={`origin-share-row${item.other ? ' other' : ''}`} key={item.origin}><div className="origin-share-label"><strong>{item.origin}</strong><span>{(item.share * 100).toFixed(1).replace('.', ',')}% · {number.format(Math.round(item.volume))}</span></div><div className="origin-share-track"><span style={{ width: `${Math.max(2, item.share * 100)}%` }} /></div></div>)}</div>
         </article>}
+
+        </div>
 
         <section className="contact-card" id="contacto">
           <div className="contact-copy"><p className="eyebrow">Contacto</p><p>Cuéntanos brevemente qué información necesitas y te responderemos a la brevedad.</p></div>
