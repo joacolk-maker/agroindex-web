@@ -118,8 +118,13 @@ function seasonDescription(category?: string) {
   if (category === 'Media') return 'volumen intermedio';
   return 'volumen alto';
 }
-function axisLabel(date: string, spanDays: number) {
+function axisLabel(date: string, spanDays: number, compact = false) {
   const value = parseDate(date);
+  if (compact) {
+    if (spanDays > 730) return String(value.getUTCFullYear());
+    if (spanDays > 120) return `${String(value.getUTCMonth() + 1).padStart(2, '0')}/${String(value.getUTCFullYear()).slice(-2)}`;
+    return `${String(value.getUTCDate()).padStart(2, '0')}/${String(value.getUTCMonth() + 1).padStart(2, '0')}`;
+  }
   if (spanDays > 730) return String(value.getUTCFullYear());
   if (spanDays > 120) return new Intl.DateTimeFormat('es-CL', { month: 'short', year: 'numeric', timeZone: 'UTC' }).format(value);
   return shortDate.format(value);
@@ -186,8 +191,9 @@ function PriceChart({ points }: { points: DailyPoint[] }) {
       const y = (value: number) => margin.top + (yMax - value) * chartHeight / (yMax - yMin || 1);
       context.font = '11px Inter, system-ui, sans-serif'; context.fillStyle = '#647985'; context.strokeStyle = '#dce7e3'; context.lineWidth = 1;
       for (let tick = 0; tick <= 4; tick += 1) { const value = yMin + (yMax - yMin) * tick / 4; const yy = y(value); context.beginPath(); context.moveTo(margin.left, yy); context.lineTo(width - margin.right, yy); context.stroke(); context.textAlign = 'right'; context.fillText(money.format(value), margin.left - 10, yy + 4); }
-      const labelCount = Math.min(6, points.length);
-      for (let tick = 0; tick < labelCount; tick += 1) { const index = Math.round(tick * (points.length - 1) / Math.max(labelCount - 1, 1)); context.textAlign = tick === 0 ? 'left' : tick === labelCount - 1 ? 'right' : 'center'; context.fillText(axisLabel(points[index].date, spanDays), x(index), height - 14); }
+      const compactLabels = width < 600;
+      const labelCount = Math.min(compactLabels ? (width < 400 ? 3 : 4) : 6, points.length);
+      for (let tick = 0; tick < labelCount; tick += 1) { const index = Math.round(tick * (points.length - 1) / Math.max(labelCount - 1, 1)); context.textAlign = tick === 0 ? 'left' : tick === labelCount - 1 ? 'right' : 'center'; context.fillText(axisLabel(points[index].date, spanDays, compactLabels), x(index), height - 14); }
       if (visible.minimum && visible.maximum) { context.beginPath(); points.forEach((point, index) => index ? context.lineTo(x(index), y(point.maximum)) : context.moveTo(x(index), y(point.maximum))); for (let index = points.length - 1; index >= 0; index -= 1) context.lineTo(x(index), y(points[index].minimum)); context.closePath(); context.fillStyle = 'rgba(15,118,110,.10)'; context.fill(); }
       const line = (field: 'minimum' | 'average' | 'maximum', color: string, widthValue: number, dash: number[] = []) => { if (!visible[field]) return; context.beginPath(); context.strokeStyle = color; context.lineWidth = widthValue; context.setLineDash(dash); points.forEach((point, index) => index ? context.lineTo(x(index), y(point[field])) : context.moveTo(x(index), y(point[field]))); context.stroke(); context.setLineDash([]); };
       line('minimum', '#d56e49', 1.5, [5, 4]); line('maximum', '#4f7cac', 1.5, [5, 4]); line('average', '#0f766e', 3);
@@ -234,11 +240,12 @@ function VolumeChart({ points, unit }: { points: DailyPoint[]; unit: string }) {
       context.fillStyle = 'rgba(15,118,110,.62)';
       points.forEach((point, index) => context.fillRect(x(index) - barWidth / 2, y(point.volume), barWidth, margin.top + chartHeight - y(point.volume)));
       if (trend.length > 1) { context.beginPath(); context.strokeStyle = '#0b2533'; context.lineWidth = 2.5; context.lineJoin = 'round'; context.lineCap = 'round'; trend.forEach((value, index) => index ? context.lineTo(x(index), y(value)) : context.moveTo(x(index), y(value))); context.stroke(); }
-      const labelCount = Math.min(5, points.length);
+      const compactLabels = width < 600;
+      const labelCount = Math.min(compactLabels ? (width < 400 ? 3 : 4) : 5, points.length);
       for (let tick = 0; tick < labelCount; tick += 1) {
         const index = Math.round(tick * (points.length - 1) / Math.max(labelCount - 1, 1));
         context.textAlign = tick === 0 ? 'left' : tick === labelCount - 1 ? 'right' : 'center';
-        context.fillText(axisLabel(points[index].date, spanDays), x(index), height - 14);
+        context.fillText(axisLabel(points[index].date, spanDays, compactLabels), x(index), height - 14);
       }
       if (hovered !== null) { const xx = x(hovered); context.strokeStyle = '#0b253380'; context.setLineDash([3, 3]); context.beginPath(); context.moveTo(xx, margin.top); context.lineTo(xx, margin.top + chartHeight); context.stroke(); context.setLineDash([]); }
     };
@@ -276,10 +283,11 @@ function MarketEvolutionChart({ points }: { points: MarketDailyPoint[] }) {
         context.beginPath(); context.moveTo(margin.left, yy); context.lineTo(width - margin.right, yy); context.stroke();
         context.textAlign = 'right'; context.fillText(money.format(price), margin.left - 10, yy + 4);
       }
-      const labelCount = Math.min(5, dates.length);
+      const compactLabels = width < 600;
+      const labelCount = Math.min(compactLabels ? (width < 400 ? 3 : 4) : 5, dates.length);
       for (let tick = 0; tick < labelCount; tick += 1) {
         const index = Math.round(tick * (dates.length - 1) / Math.max(labelCount - 1, 1));
-        context.textAlign = tick === 0 ? 'left' : tick === labelCount - 1 ? 'right' : 'center'; context.fillText(axisLabel(dates[index], spanDays), x(dates[index]), height - 14);
+        context.textAlign = tick === 0 ? 'left' : tick === labelCount - 1 ? 'right' : 'center'; context.fillText(axisLabel(dates[index], spanDays, compactLabels), x(dates[index]), height - 14);
       }
       markets.filter((rowMarket) => displayedMarkets.includes(rowMarket)).forEach((rowMarket) => {
         const index = markets.indexOf(rowMarket);
@@ -732,7 +740,6 @@ export default function Home() {
         <article className="panel chart-panel">
           <div className="panel-title"><div><p>Evolución histórica</p><h3>Precio mínimo, promedio y máximo</h3></div></div>
           <PriceChart points={displayPoints} />
-          <p className="chart-note">El promedio se pondera por el volumen informado. La banda representa el rango mínimo–máximo. Cada fecha reportada ocupa un lugar consecutivo: no se reservan espacios para fines de semana ni días sin publicación. En consultas superiores a dos años, el gráfico agrupa por mes.</p>
         </article>
 
         <article className="panel chart-panel">
@@ -755,7 +762,7 @@ export default function Home() {
 
         {effectiveUnit && originShares.length > 0 && <article className="panel origin-share-panel" aria-label="Procedencia del volumen transado">
           <div className="panel-title"><div><p>Procedencia del volumen</p><h3>Principales orígenes del volumen transado</h3></div><span>{originShares.length - (originShares.some((item) => item.other) ? 1 : 0)} principales</span></div>
-          <p className="comparison-note">Participación del volumen informado para la selección actual. Se muestran los orígenes que concentran aproximadamente el 80%; el resto se agrupa como “Otros”, siguiendo una regla de Pareto. Unidad: {effectiveUnit}.</p>
+          <p className="comparison-note">Participación del volumen informado para la selección actual.</p>
           <div className="origin-share-list">{originShares.map((item) => <div className={`origin-share-row${item.other ? ' other' : ''}`} key={item.origin}><div className="origin-share-label"><strong>{item.origin}</strong><span>{(item.share * 100).toFixed(1).replace('.', ',')}% · {number.format(Math.round(item.volume))}</span></div><div className="origin-share-track"><span style={{ width: `${Math.max(2, item.share * 100)}%` }} /></div></div>)}</div>
         </article>}
 
