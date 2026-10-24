@@ -45,6 +45,7 @@ type SnapshotRow = { snapshot: HistoricalSnapshot; row: CompactRow };
 type DailyPoint = { date: string; volume: number; minimum: number; maximum: number; average: number; observations: number };
 type MarketPoint = { market: string; date: string; volume: number; minimum: number; maximum: number; average: number; observations: number };
 type MarketDailyPoint = MarketPoint;
+type OriginShare = { origin: string; volume: number; share: number; other?: boolean };
 type Variation = { days: number; value: number; markets?: number };
 type PublicationRules = { schema_version: 1; generated_at: string; source: string; matching_dimensions: string[]; total_rules: number; allowed_rules: number; allowed_series: string[] };
 type SeasonalityRow = [number, number, number, number, number, number, number, number[]];
@@ -62,7 +63,7 @@ const number = new Intl.NumberFormat('es-CL');
 const shortDate = new Intl.DateTimeFormat('es-CL', { day: '2-digit', month: 'short', timeZone: 'UTC' });
 const longDate = new Intl.DateTimeFormat('es-CL', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'America/Santiago' });
 const basePath = process.env.NEXT_PUBLIC_BASE_PATH ?? '';
-const contactEndpoint = 'https://formsubmit.co/ajax/contacto@agroindex.cl';
+const contactEmail = process.env.NEXT_PUBLIC_CONTACT_EMAIL?.trim() || 'joacolk@gmail.com';
 const allRegions = 'Todas las regiones';
 const allMarkets = 'Todos los mercados';
 const allSubsectors = 'Todos los subsectores';
@@ -93,6 +94,23 @@ function formatPricePerKg(price: number, conversion: KgConversion | null) {
   const range = pricePerKgRange(price, conversion);
   if (Math.abs(range.maximum - range.minimum) < .01) return `${money.format(range.minimum)}/kg`;
   return `${money.format(range.minimum)}–${money.format(range.maximum)}/kg`;
+}
+function equivalentLabel(unit: string) {
+  return /kilo|gramo/i.test(unit) ? 'Estimación por kilo' : 'Equivalente por unidad';
+}
+function formatEquivalentPrice(price: number, unit: string, conversion: KgConversion | null) {
+  if (!Number.isFinite(price)) return '—';
+  if (/kilo|gramo/i.test(unit)) return formatPricePerKg(price, conversion);
+  const count = unit.match(/(\d+)\s+(?:unidades|atados|matas|paquetes)/i);
+  if (count) return `${money.format(price / Number(count[1]))}/unidad`;
+  return formatPricePerKg(price, conversion);
+}
+function commercialVolumeLabel(volume: number, unit: string) {
+  const match = unit.match(/^\$\/([^\s]+)/i);
+  const rawCommercial = match ? match[1].toLocaleLowerCase('es-CL') : 'unidad';
+  const commercial = rawCommercial.endsWith('s') ? rawCommercial : `${rawCommercial}s`;
+  const count = unit.match(/(\d+)\s+unidades/i);
+  return { primary: `${number.format(volume)} ${commercial}`, secondary: count ? `${number.format(volume * Number(count[1]))} unidades` : null };
 }
 function seasonDescription(category?: string) {
   if (category === 'Nula') return 'sin volumen informado';
@@ -300,9 +318,8 @@ export default function Home() {
   const [seasonalityMonth, setSeasonalityMonth] = useState(new Date().getUTCMonth() + 1);
   const [from, setFrom] = useState('');
   const [to, setTo] = useState('');
+  const [hasSearched, setHasSearched] = useState(false);
   const [contactStatus, setContactStatus] = useState('');
-  const [contactStatusType, setContactStatusType] = useState<'success' | 'error' | ''>('');
-  const [contactSubmitting, setContactSubmitting] = useState(false);
 
   useEffect(() => {
     fetch(`${basePath}/data/manifest.json`)
@@ -310,8 +327,8 @@ export default function Home() {
       .then((data) => {
         if (data.schema_version !== 4) throw new Error('Versión de datos incompatible');
         setManifest(data);
-        const initialStart = parseDate(data.max_data_date);
-        initialStart.setUTCDate(initialStart.getUTCDate() - 89);
+        const initialStart = new Date();
+        initialStart.setFullYear(initialStart.getFullYear() - 1);
         setFrom(isoDate(initialStart) < data.min_data_date ? data.min_data_date : isoDate(initialStart));
         setTo(data.max_data_date);
       })
@@ -423,7 +440,7 @@ export default function Home() {
   const { regions: regionOptions, markets: marketOptions, subsectors: subsectorOptions } = catalog.options;
   const marketLabel = selectedMarkets.length === 0 ? allMarkets : selectedMarkets.length === 1 ? selectedMarkets[0] : `${selectedMarkets.length} mercados seleccionados`;
   const productOptions = useMemo(() => dimensionOptions(catalog.historyRows, ({ snapshot, row }) => snapshot.products[row[4]], representativeOnly), [catalog.historyRows, representativeOnly]);
-  const effectiveProduct = productOptions.includes(product) ? product : (productOptions[0] ?? '');
+  const effectiveProduct = productOptions.includes(product) ? product : '';
   const series = useMemo(() => {
     const productRows = catalog.rows.filter(({ snapshot, row }) => snapshot.products[row[4]] === effectiveProduct);
     const comparisonProductRows = catalog.comparisonRows.filter(({ snapshot, row }) => snapshot.products[row[4]] === effectiveProduct);
@@ -509,6 +526,26 @@ export default function Home() {
     const markets = new Set(series.rows.map(({ snapshot, row }) => snapshot.markets[row[2]])).size;
     return { days: dailyPoints.length, calendarDays, markets };
   }, [dailyPoints, series.rows, from, to]);
+  const originShares = useMemo<OriginShare[]>(() => {
+    const totals = new Map<string, number>();
+    series.rows.forEach(({ snapshot, row }) => {
+      const origin = snapshot.origins[row[14]] || 'Sin especificar';
+      totals.set(origin, (totals.get(origin) ?? 0) + row[8]);
+    });
+    const total = [...totals.values()].reduce((sum, value) => sum + value, 0);
+    if (!total) return [];
+    const sorted = [...totals.entries()].sort((a, b) => b[1] - a[1]);
+    const selected: OriginShare[] = [];
+    let cumulative = 0;
+    for (const [origin, volume] of sorted) {
+      selected.push({ origin, volume, share: volume / total });
+      cumulative += volume / total;
+      if (cumulative >= 0.8) break;
+    }
+    const remainder = Math.max(0, total - selected.reduce((sum, item) => sum + item.volume, 0));
+    if (remainder > 0) selected.push({ origin: 'Otros', volume: remainder, share: remainder / total, other: true });
+    return selected;
+  }, [series.rows]);
   const locationPoint = useMemo(() => geoLocation ?? (regionCoordinates[region] ? { lat: regionCoordinates[region][0], lon: regionCoordinates[region][1], source: 'region' as const } : null), [geoLocation, region]);
   const nearestMarketToday = useMemo(() => {
     if (!latestPoint || !locationPoint) return undefined;
@@ -569,50 +606,27 @@ export default function Home() {
   const resetFilters = () => {
     if (!manifest) return;
     setRegion(allRegions); setSelectedMarkets([]); setSubsector(allSubsectors); setProduct('');
-    setVariety(allVarieties); setQuality(allQualities); setUnit(''); setQuickRange(90);
+    setVariety(allVarieties); setQuality(allQualities); setUnit(''); setQuickRange(365);
   };
 
   const generatedAt = manifest ? longDate.format(new Date(manifest.snapshot_generated_at)) : '—';
   const maxDataDate = manifest ? longDate.format(parseDate(manifest.max_data_date)) : '—';
 
-  const handleContactSubmit = async (event: FormEvent<HTMLFormElement>) => {
+  const handleContactSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const formElement = event.currentTarget;
-    const form = new FormData(formElement);
-    setContactSubmitting(true);
-    setContactStatus('');
-    setContactStatusType('');
-
-    try {
-      const response = await fetch(contactEndpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-        body: JSON.stringify({
-          nombre: String(form.get('nombre') || ''),
-          empresa: String(form.get('empresa') || 'No informada'),
-          email: String(form.get('email') || ''),
-          solicitud: String(form.get('solicitud') || ''),
-          _subject: `Solicitud AgroIndex · ${String(form.get('empresa') || form.get('nombre') || 'Contacto')}`,
-          _template: 'table',
-          _honey: String(form.get('_honey') || ''),
-          _url: window.location.href,
-        }),
-      });
-      const result = await response.json().catch(() => null) as { success?: boolean | string } | null;
-      if (!response.ok || result?.success === false || result?.success === 'false') throw new Error('No se pudo enviar');
-      formElement.reset();
-      setContactStatusType('success');
-      setContactStatus('Mensaje enviado correctamente. Gracias por contactarnos.');
-    } catch {
-      setContactStatusType('error');
-      setContactStatus('No pudimos enviar tu mensaje. Intenta nuevamente en unos minutos.');
-    } finally {
-      setContactSubmitting(false);
+    const form = new FormData(event.currentTarget);
+    if (!contactEmail) {
+      setContactStatus('Vista local: el formulario está listo. Antes de publicar definiremos el correo de destino.');
+      return;
     }
+    const subject = `Solicitud AgroIndex · ${String(form.get('empresa') || form.get('nombre') || 'Contacto')}`;
+    const body = [`Nombre: ${form.get('nombre')}`, `Empresa: ${form.get('empresa') || '—'}`, `Email: ${form.get('email')}`, '', String(form.get('solicitud'))].join('\n');
+    window.location.href = `mailto:${contactEmail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    setContactStatus('Abrimos tu correo para completar el envío.');
   };
 
   if (loadError) return <main className="state-page"><h1>No pudimos cargar el historial.</h1><p>La fuente quedó temporalmente indisponible. Intenta nuevamente.</p></main>;
-  if (!manifest) return <main className="state-page"><span className="loader" /><h1>Cargando datos ODEPA…</h1></main>;
+  if (!manifest) return <main className="state-page"><span className="loader" /><h1>Preparando AgroIndex…</h1></main>;
 
   return (
     <main>
@@ -672,53 +686,48 @@ export default function Home() {
 
       <section className="dashboard" id="evolucion">
         <div className="filters" aria-label="Filtros del historial">
-          <label>Región<select value={region} onChange={(event) => { setRegion(event.target.value); setSelectedMarkets([]); setSubsector(allSubsectors); setVariety(allVarieties); setQuality(allQualities); setUnit(''); }}><option>{allRegions}</option>{regionOptions.map((item) => <option key={item}>{item}</option>)}</select></label>
-          <details className="market-filter" ref={marketFilterRef}><summary><span>Mercados</span><strong>{selectedMarkets.length === 0 ? 'Todos los mercados' : `${selectedMarkets.length} seleccionados`}</strong></summary><div className="market-checklist"><button type="button" className="market-all" onClick={() => { setSelectedMarkets([]); setSubsector(allSubsectors); setVariety(allVarieties); setQuality(allQualities); setUnit(''); }}>Todos los mercados</button>{marketOptions.map((item) => <label key={item}><input type="checkbox" checked={selectedMarkets.includes(item)} onChange={() => { setSelectedMarkets((current) => current.includes(item) ? current.filter((marketName) => marketName !== item) : [...current, item]); setSubsector(allSubsectors); setVariety(allVarieties); setQuality(allQualities); setUnit(''); }} />{item}</label>)}</div></details>
-          <label>Subsector<select value={subsector} onChange={(event) => { setSubsector(event.target.value); setVariety(allVarieties); setQuality(allQualities); setUnit(''); }}><option>{allSubsectors}</option>{subsectorOptions.map((item) => <option key={item}>{item}</option>)}</select></label>
           <label>Producto<select value={effectiveProduct} onChange={(event) => { setProduct(event.target.value); setVariety(allVarieties); setQuality(allQualities); setUnit(''); }}>
+            <option value="" disabled>Selecciona un producto</option>
             {productOptions.map((item) => <option key={item}>{item}</option>)}
           </select><small>{productOptions.length} productos disponibles</small></label>
           <label>Variedad<select value={effectiveVariety} onChange={(event) => { setVariety(event.target.value); setQuality(allQualities); setUnit(''); }}><option>{allVarieties}</option>{varietyOptions.map((item) => <option key={item}>{item}</option>)}</select></label>
           <label>Calidad<select value={effectiveQuality} onChange={(event) => { setQuality(event.target.value); setUnit(''); }}><option>{allQualities}</option>{qualityOptions.map((item) => <option key={item}>{item}</option>)}</select></label>
           <label>Unidad com.<select value={effectiveUnit} onChange={(event) => setUnit(event.target.value)}><option value="" disabled>Selecciona una unidad</option>{unitOptions.map((item) => <option key={item}>{item}</option>)}</select></label>
           <div className="date-filter"><span>Rango de fechas</span><div><label><small>Fecha inicio</small><input type="date" min={manifest.min_data_date} max={to} value={from} onChange={(event) => setFrom(event.target.value)} /></label><label><small>Fecha fin</small><input type="date" min={from} max={manifest.max_data_date} value={to} onChange={(event) => setTo(event.target.value)} /></label></div></div>
+          <button className="filter-search-button" type="button" onClick={() => setHasSearched(true)}>Buscar</button>
         </div>
-
-        <label className="representative-toggle"><input type="checkbox" checked={representativeOnly} onChange={(event) => { setRepresentativeOnly(event.target.checked); setVariety(allVarieties); setQuality(allQualities); setUnit(''); }} /><span><strong>Mostrar sólo series con cobertura suficiente</strong><small>Al menos {MINIMUM_REPRESENTATIVE_DAYS} días con reporte en la evidencia anual cargada; no se cuentan filas duplicadas como nuevas observaciones.</small></span></label>
 
         <div className="filter-tools" aria-label="Atajos de filtros">
           <div><span>Período rápido</span><button type="button" onClick={() => setQuickRange(7)}>7 días</button><button type="button" onClick={() => setQuickRange(30)}>30 días</button><button type="button" onClick={() => setQuickRange(90)}>90 días</button><button type="button" onClick={() => setQuickRange(180)}>180 días</button><button type="button" onClick={() => setQuickRange(365)}>1 año</button><button type="button" onClick={() => { const start = `${manifest.max_data_date.slice(0, 4)}-01-01`; setFrom(start); setTo(manifest.max_data_date); }}>Año actual</button></div>
-          <button className="reset-button" type="button" onClick={resetFilters}>Restablecer filtros</button>
+          <button className="reset-button" type="button" onClick={() => { resetFilters(); setHasSearched(false); }}>Restablecer filtros</button>
         </div>
 
+        {!hasSearched ? <div className="search-prompt"><strong>Selecciona los filtros y presiona Buscar</strong><span>Los indicadores y gráficos aparecerán aquí después de realizar una consulta.</span></div> : <>
         {!dataReady && <div className="data-loading"><span className="loader" /> Cargando {requiredYears.length === 1 ? requiredYears[0]?.year : `${requiredYears[0]?.year}–${requiredYears[requiredYears.length - 1]?.year}`}…</div>}
         {dataReady && !effectiveUnit && <div className="selection-prompt">Selecciona una unidad de comercialización para calcular precios y volúmenes sin mezclar formatos.</div>}
-        <div className="section-heading decision-heading"><div><span className="produce-dot" /><div><p className="eyebrow">Lectura de venta</p><h2>{effectiveProduct || 'Sin producto'}</h2></div><span className="unit-pill">{effectiveVariety}</span><span className="unit-pill">{effectiveQuality}</span><span className="unit-pill">{effectiveUnit || 'Unidad pendiente'}</span></div><p>{marketLabel} · {region}<br />{latestPoint ? `Último registro: ${longDate.format(parseDate(latestPoint.date))}` : 'Sin datos para la selección'}</p></div>
+        <div className="section-heading decision-heading"><div><span className="produce-dot" /><div><div className="summary-label"><p className="eyebrow">Resumen de mercado</p><img className="summary-logo" src="/agroindex-logo-horizontal.svg" alt="AgroIndex" /></div><h2>{effectiveProduct || 'Sin producto'} {effectiveVariety} {effectiveQuality}, {effectiveUnit || 'pendiente'}</h2></div></div></div>
         {!effectiveUnit ? <section className="decision-onboarding"><span>01</span><div><p>Comienza con una unidad de comercialización</p><h3>El precio sólo es comparable dentro del mismo formato de venta.</h3><small>Elige caja, saco, malla u otra unidad para activar la referencia, el rango observado y los mercados comparables.</small></div></section> : <>
           <section className="decision-board" aria-label="Resumen para decisión de venta">
-            <article className="price-reference"><p>Referencia de precio hoy</p><strong>{formatMetric(latestPoint?.average ?? Number.NaN, money)}</strong><span>Promedio ponderado por volumen · unidad original ODEPA</span><div className={`kg-equivalent ${kgConversion ? '' : 'unavailable'}`}><span>Equivalente por kilo</span><b>{formatPricePerKg(latestPoint?.average ?? Number.NaN, kgConversion)}</b><small>{kgConversion?.detail ?? 'Sin peso confiable para convertir esta unidad.'}</small></div><small>{latestPoint ? `Último dato disponible: ${longDate.format(parseDate(latestPoint.date))}` : 'Sin datos para la combinación seleccionada'}</small></article>
-            <article className="decision-stat"><p>Rango observado hoy</p><strong>{latestPoint ? `${money.format(latestPoint.minimum)} – ${money.format(latestPoint.maximum)}` : '—'}</strong><span>Mínimo y máximo informados</span></article>
-            <article className="decision-stat"><p>Volumen informado</p><strong>{latestPoint ? number.format(latestPoint.volume) : '—'}</strong><span>Unidades transadas el último día</span></article>
-            <article className="decision-stat market-opportunity"><p>Mercado más cercano</p><strong>{nearestMarketToday ? money.format(nearestMarketToday.point.average) : '—'}</strong><span>{nearestMarketToday ? `${nearestMarketToday.point.market} · ${Math.round(nearestMarketToday.distance)} km` : geoStatus === 'loading' ? 'Buscando ubicación…' : 'Selecciona una región o autoriza ubicación'}</span></article>
+            <article className="price-reference"><p>Precio promedio ponderado al {latestPoint ? longDate.format(parseDate(latestPoint.date)) : 'último dato disponible'}</p><strong>{formatMetric(latestPoint?.average ?? Number.NaN, money)}</strong><div className={`kg-equivalent ${kgConversion ? '' : 'unavailable'}`}><span>{equivalentLabel(effectiveUnit)}</span><b>{formatEquivalentPrice(latestPoint?.average ?? Number.NaN, effectiveUnit, kgConversion)}</b></div></article>
+            <div className="decision-secondary">
+              <article className="decision-stat"><p>Rango observado hoy</p><strong className="range-values">{latestPoint ? <><span>Máximo: {money.format(latestPoint.maximum)}</span><span>Mínimo: {money.format(latestPoint.minimum)}</span></> : '—'}</strong><span>Precios en la unidad seleccionada</span></article>
+              <article className="decision-stat"><p>Volumen informado</p><strong className="volume-values">{latestPoint ? <><span>{commercialVolumeLabel(latestPoint.volume, effectiveUnit).primary}</span>{commercialVolumeLabel(latestPoint.volume, effectiveUnit).secondary ? <span>{commercialVolumeLabel(latestPoint.volume, effectiveUnit).secondary}</span> : kgConversion ? <span>{number.format(latestPoint.volume * kgConversion.minKg)} kilos transados</span> : null}</> : '—'}</strong><span>Volumen informado el último día</span></article>
+              <article className="decision-stat market-opportunity"><p>Mercado más cercano</p><strong>{nearestMarketToday ? nearestMarketToday.point.market : '—'}</strong><span>{nearestMarketToday ? `${Math.round(nearestMarketToday.distance)} kms distancia` : geoStatus === 'loading' ? 'Buscando ubicación…' : 'Selecciona una región o autoriza ubicación'}</span></article>
+              <article className="decision-stat"><p>Actividad Registrada</p><strong>{activity.days} de {activity.calendarDays} días</strong><span>{activity.markets} mercados con operaciones</span></article>
+            </div>
           </section>
 
-          <p className="kg-disclaimer"><strong>Referencia por kilo:</strong> facilita la comparación entre formatos, pero no corresponde al pago neto al productor. Se mantienen siempre el precio y la unidad originales de ODEPA.</p>
-
-          <section className="market-reading strong" aria-label="Actividad registrada">
-            <div className="confidence-label"><span className="confidence-dot" /><div><strong>Actividad registrada</strong><small>{activity.days} de {activity.calendarDays} días con precio informado · {activity.markets} mercados con operaciones</small></div></div>
-            <p>La disponibilidad varía según mercado, formato de venta y estacionalidad. Úsala como contexto de la lectura de precios, no como una medida de calidad de los datos.</p>
-          </section>
         </>}
 
-        {productSeasonality && <section className="seasonality-card" aria-label={`Estacionalidad de ${effectiveProduct}`}>
-          <div className="seasonality-copy"><p className="eyebrow">Estacionalidad histórica</p><h3>¿Cuándo se transa más {effectiveProduct}?</h3><p>Promedio mensual del volumen transado informado por ODEPA entre {seasonality?.baseline_years[0]} y {seasonality?.baseline_years.at(-1)}, usando la selección actual de región, mercado, variedad, calidad y unidad. No representa la oferta total disponible.</p><div className="seasonality-current"><span className="season-dot" /><div><strong>{selectedSeason?.label}: {seasonDescription(selectedSeason?.category)}</strong><small>{selectedSeason ? `${Math.round(selectedSeason.relativeVolume * 100)}% del mes de mayor volumen histórico para esta selección` : ''}</small></div></div></div>
-          <div className="seasonality-chart"><label>Consultar mes<select value={seasonalityMonth} onChange={(event) => setSeasonalityMonth(Number(event.target.value))}>{productSeasonality.months.map((item) => <option key={item.month} value={item.month}>{item.label}</option>)}</select></label><div className="season-bars" aria-label="Índice mensual de volumen transado histórico">{productSeasonality.months.map((item) => <button type="button" className={item.month === seasonalityMonth ? 'active' : ''} key={item.month} title={`${item.label}: ${number.format(item.volume)} unidades promedio`} onClick={() => setSeasonalityMonth(item.month)}><span style={{ height: `${Math.max(8, item.relativeVolume * 100)}%` }} /><small>{item.label.slice(0, 3)}</small></button>)}</div></div>
-        </section>}
-
         <div className="variation-section">
-          <div className="variation-heading"><div><p>Variaciones porcentuales</p><h3>Índice de precio por mercado</h3></div><span>Canasta fija · evita el efecto de mezcla por volumen</span></div>
-          <div className="variation-grid">{variations.map((item) => <article className={Number.isFinite(item.value) && item.value < 0 ? 'negative' : ''} key={item.days}><span>{item.days} días</span><strong>{Number.isFinite(item.value) ? `${item.value >= 0 ? '+' : ''}${item.value.toFixed(1).replace('.', ',')}%` : '—'}</strong><small>{item.markets ? `Canasta fija · ${item.markets} mercados` : 'Sin dato comparable'}</small></article>)}</div>
+          <div className="variation-heading"><div><p>Variaciones porcentuales</p><small className="variation-note">Cambio promedio del precio en los mercados que tienen datos para ambas fechas.</small></div></div>
+          <div className="variation-grid">{variations.map((item) => <article className={Number.isFinite(item.value) && item.value < 0 ? 'negative' : ''} key={item.days}><span>{item.days} días</span><strong>{Number.isFinite(item.value) ? `${item.value >= 0 ? '+' : ''}${item.value.toFixed(1).replace('.', ',')}%` : '—'}</strong><small>{item.markets ? `${item.markets} mercados` : 'Sin dato comparable'}</small></article>)}</div>
         </div>
+
+        {productSeasonality && <section className="seasonality-card" aria-label={`Estacionalidad de ${effectiveProduct}`}>
+          <div className="seasonality-copy"><p className="eyebrow">Estacionalidad histórica</p><h3>¿Cuándo se transa más {effectiveProduct}?</h3><p>Promedio mensual del volumen transado informado entre {seasonality?.baseline_years[0]} y {seasonality?.baseline_years.at(-1)}, usando la selección actual de región, mercado, variedad, calidad y unidad. No representa la oferta total disponible.</p><div className="seasonality-current"><span className="season-dot" /><div><strong>{selectedSeason?.label}: {seasonDescription(selectedSeason?.category)}</strong><small>{selectedSeason ? `${Math.round(selectedSeason.relativeVolume * 100)}% del mes de mayor volumen histórico para esta selección` : ''}</small></div></div></div>
+          <div className="seasonality-chart"><div className="season-bars" aria-label="Índice mensual de volumen transado histórico">{productSeasonality.months.map((item) => <button type="button" className={item.month === seasonalityMonth ? 'active' : ''} key={item.month} onClick={() => setSeasonalityMonth(item.month)}><span style={{ height: `${Math.max(8, item.relativeVolume * 100)}%` }} /><small>{item.label.slice(0, 3)}</small></button>)}</div></div>
+        </section>}
 
         <article className="panel chart-panel">
           <div className="panel-title"><div><p>Evolución histórica</p><h3>Precio mínimo, promedio y máximo</h3></div></div>
@@ -729,7 +738,7 @@ export default function Home() {
         <article className="panel chart-panel">
           <div className="panel-title"><div><p>Actividad mayorista</p><h3>Volumen transado por día</h3></div></div>
           <VolumeChart points={displayPoints} unit={effectiveUnit} />
-          <p className="chart-note">Suma del volumen informado por ODEPA para la región, mercado, serie comercial y rango seleccionados. Cada barra corresponde a una fecha reportada, sin huecos por fines de semana; en períodos extensos se agrupa por mes.</p>
+          <p className="chart-note">Suma del volumen informado para la región, mercado, serie comercial y rango seleccionados. Cada barra corresponde a una fecha reportada, excluye fines de semana.</p>
         </article>
 
         <article className="panel chart-panel" id="mercados">
@@ -744,18 +753,24 @@ export default function Home() {
           <div className="table-scroll"><table><thead><tr><th>Mercado</th><th>Fecha</th><th>Volumen</th><th>Mínimo</th><th>Máximo</th><th>Promedio ponderado</th><th>Equiv. $/kg</th><th>Var. 7d</th><th>Var. 30d</th></tr></thead><tbody>{marketRows.map((row) => <tr className={selectedMarkets.includes(row.market) ? 'selected-row' : undefined} key={row.market}><td><button className="market-button" type="button" onClick={() => { setSelectedMarkets([row.market]); document.querySelector('#evolucion')?.scrollIntoView({ behavior: 'smooth' }); }}>{row.market}</button></td><td>{longDate.format(parseDate(row.date))}</td><td>{number.format(row.volume)}</td><td>{money.format(row.minimum)}</td><td>{money.format(row.maximum)}</td><td className="price-cell">{money.format(row.average)}</td><td className="kg-price-cell">{formatPricePerKg(row.average, kgConversion)}</td><td className={Number.isFinite(row.variation7) && row.variation7 < 0 ? 'negative-value' : 'positive-value'}>{Number.isFinite(row.variation7) ? `${row.variation7 >= 0 ? '+' : ''}${row.variation7.toFixed(1).replace('.', ',')}%` : 'No Data'}</td><td className={Number.isFinite(row.variation30) && row.variation30 < 0 ? 'negative-value' : 'positive-value'}>{Number.isFinite(row.variation30) ? `${row.variation30 >= 0 ? '+' : ''}${row.variation30.toFixed(1).replace('.', ',')}%` : 'No Data'}</td></tr>)}</tbody></table></div>
         </article>
 
+        {effectiveUnit && originShares.length > 0 && <article className="panel origin-share-panel" aria-label="Procedencia del volumen transado">
+          <div className="panel-title"><div><p>Procedencia del volumen</p><h3>Principales orígenes del volumen transado</h3></div><span>{originShares.length - (originShares.some((item) => item.other) ? 1 : 0)} principales</span></div>
+          <p className="comparison-note">Participación del volumen informado para la selección actual. Se muestran los orígenes que concentran aproximadamente el 80%; el resto se agrupa como “Otros”, siguiendo una regla de Pareto. Unidad: {effectiveUnit}.</p>
+          <div className="origin-share-list">{originShares.map((item) => <div className={`origin-share-row${item.other ? ' other' : ''}`} key={item.origin}><div className="origin-share-label"><strong>{item.origin}</strong><span>{(item.share * 100).toFixed(1).replace('.', ',')}% · {number.format(Math.round(item.volume))}</span></div><div className="origin-share-track"><span style={{ width: `${Math.max(2, item.share * 100)}%` }} /></div></div>)}</div>
+        </article>}
+
         <section className="contact-card" id="contacto">
           <div className="contact-copy"><p className="eyebrow">Contacto</p><p>Cuéntanos brevemente qué información necesitas y te responderemos a la brevedad.</p></div>
           <form className="contact-form" onSubmit={handleContactSubmit}>
-            <input className="contact-honey" name="_honey" type="text" tabIndex={-1} autoComplete="off" aria-hidden="true" />
             <label>Nombre<input name="nombre" type="text" autoComplete="name" required /></label>
             <label>Empresa<input name="empresa" type="text" autoComplete="organization" /></label>
             <label>Email<input name="email" type="email" autoComplete="email" required /></label>
             <label className="contact-request">Solicitud<textarea name="solicitud" rows={3} required /></label>
-            <button type="submit" disabled={contactSubmitting}>{contactSubmitting ? 'Enviando…' : 'Enviar solicitud'} <span>→</span></button>
-            {contactStatus && <p className={`contact-status ${contactStatusType}`} role={contactStatusType === 'error' ? 'alert' : 'status'}>{contactStatus}</p>}
+            <button type="submit">Enviar solicitud <span>→</span></button>
+            {contactStatus && <p className="contact-status" role="status">{contactStatus}</p>}
           </form>
         </section>
+        </>}
       </section>
     </main>
   );
