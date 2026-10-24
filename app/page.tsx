@@ -105,6 +105,11 @@ function formatEquivalentPrice(price: number, unit: string, conversion: KgConver
   if (count) return `${money.format(price / Number(count[1]))}/unidad`;
   return formatPricePerKg(price, conversion);
 }
+function equivalentTableLabel(unit: string, conversion: KgConversion | null) {
+  if (/kilo|gramo/i.test(unit)) return 'Equiv. $/kg';
+  if (/unidad|docena|atado|mata|paquete|canastillo/i.test(unit)) return 'Equiv. $/unidad';
+  return conversion ? 'Equiv. $/kg' : 'Equiv.';
+}
 function commercialVolumeLabel(volume: number, unit: string) {
   const match = unit.match(/^\$\/([^\s]+)/i);
   const rawCommercial = match ? match[1].toLocaleLowerCase('es-CL') : 'unidad';
@@ -757,7 +762,7 @@ export default function Home() {
         <article className="panel table-panel">
           <div className="panel-title"><div><p>Último dato disponible</p><h3>Comparación por mercado</h3></div><span>{marketPoints.length} mercados</span></div>
           <p className="comparison-note">Cada fila muestra el último día disponible de ese mercado dentro del rango. Selecciona una fila para enfocarlo en el resto del análisis.</p>
-          <div className="table-scroll"><table><thead><tr><th>Mercado</th><th>Fecha</th><th>Volumen</th><th>Mínimo</th><th>Máximo</th><th>Promedio ponderado</th><th>Equiv. $/kg</th><th>Var. 7d</th><th>Var. 30d</th></tr></thead><tbody>{marketRows.map((row) => <tr className={selectedMarkets.includes(row.market) ? 'selected-row' : undefined} key={row.market}><td><button className="market-button" type="button" onClick={() => { setSelectedMarkets([row.market]); document.querySelector('#evolucion')?.scrollIntoView({ behavior: 'smooth' }); }}>{row.market}</button></td><td>{longDate.format(parseDate(row.date))}</td><td>{number.format(row.volume)}</td><td>{money.format(row.minimum)}</td><td>{money.format(row.maximum)}</td><td className="price-cell">{money.format(row.average)}</td><td className="kg-price-cell">{formatPricePerKg(row.average, kgConversion)}</td><td className={Number.isFinite(row.variation7) && row.variation7 < 0 ? 'negative-value' : 'positive-value'}>{Number.isFinite(row.variation7) ? `${row.variation7 >= 0 ? '+' : ''}${row.variation7.toFixed(1).replace('.', ',')}%` : 'No Data'}</td><td className={Number.isFinite(row.variation30) && row.variation30 < 0 ? 'negative-value' : 'positive-value'}>{Number.isFinite(row.variation30) ? `${row.variation30 >= 0 ? '+' : ''}${row.variation30.toFixed(1).replace('.', ',')}%` : 'No Data'}</td></tr>)}</tbody></table></div>
+          <div className="table-scroll"><table><thead><tr><th>Mercado</th><th>Fecha</th><th>Volumen</th><th>Mínimo</th><th>Máximo</th><th>Promedio ponderado</th><th>{equivalentTableLabel(effectiveUnit, kgConversion)}</th><th>Var. 7d</th><th>Var. 30d</th></tr></thead><tbody>{marketRows.map((row) => <tr className={selectedMarkets.includes(row.market) ? 'selected-row' : undefined} key={row.market}><td><button className="market-button" type="button" onClick={() => { setSelectedMarkets([row.market]); document.querySelector('#evolucion')?.scrollIntoView({ behavior: 'smooth' }); }}>{row.market}</button></td><td>{longDate.format(parseDate(row.date))}</td><td>{number.format(row.volume)}</td><td>{money.format(row.minimum)}</td><td>{money.format(row.maximum)}</td><td className="price-cell">{money.format(row.average)}</td><td className="kg-price-cell">{formatEquivalentPrice(row.average, effectiveUnit, kgConversion)}</td><td className={Number.isFinite(row.variation7) && row.variation7 < 0 ? 'negative-value' : 'positive-value'}>{Number.isFinite(row.variation7) ? `${row.variation7 >= 0 ? '+' : ''}${row.variation7.toFixed(1).replace('.', ',')}%` : 'No Data'}</td><td className={Number.isFinite(row.variation30) && row.variation30 < 0 ? 'negative-value' : 'positive-value'}>{Number.isFinite(row.variation30) ? `${row.variation30 >= 0 ? '+' : ''}${row.variation30.toFixed(1).replace('.', ',')}%` : 'No Data'}</td></tr>)}</tbody></table></div>
         </article>
 
         {effectiveUnit && originShares.length > 0 && <article className="panel origin-share-panel" aria-label="Procedencia del volumen transado">
