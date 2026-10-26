@@ -64,6 +64,7 @@ const shortDate = new Intl.DateTimeFormat('es-CL', { day: '2-digit', month: 'sho
 const longDate = new Intl.DateTimeFormat('es-CL', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'America/Santiago' });
 const basePath = process.env.NEXT_PUBLIC_BASE_PATH ?? '';
 const contactEmail = process.env.NEXT_PUBLIC_CONTACT_EMAIL?.trim() || 'joacolk@gmail.com';
+const contactEndpoint = process.env.NEXT_PUBLIC_CONTACT_ENDPOINT?.trim() || `https://formsubmit.co/ajax/${encodeURIComponent(contactEmail)}`;
 const allRegions = 'Todas las regiones';
 const allMarkets = 'Todos los mercados';
 const allSubsectors = 'Todos los subsectores';
@@ -333,6 +334,7 @@ export default function Home() {
   const [to, setTo] = useState('');
   const [hasSearched, setHasSearched] = useState(false);
   const [contactStatus, setContactStatus] = useState('');
+  const [contactSending, setContactSending] = useState(false);
 
   useEffect(() => {
     fetch(`${basePath}/data/manifest.json`)
@@ -625,17 +627,30 @@ export default function Home() {
   const generatedAt = manifest ? longDate.format(new Date(manifest.snapshot_generated_at)) : '—';
   const maxDataDate = manifest ? longDate.format(parseDate(manifest.max_data_date)) : '—';
 
-  const handleContactSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const handleContactSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const form = new FormData(event.currentTarget);
-    if (!contactEmail) {
-      setContactStatus('Vista local: el formulario está listo. Antes de publicar definiremos el correo de destino.');
-      return;
+    if (contactSending) return;
+    const formElement = event.currentTarget;
+    const form = new FormData(formElement);
+    form.set('_subject', `Solicitud AgroIndex · ${String(form.get('empresa') || form.get('nombre') || 'Contacto')}`);
+    form.set('_captcha', 'false');
+    form.set('_template', 'table');
+    setContactSending(true);
+    setContactStatus('Enviando solicitud…');
+    try {
+      const response = await fetch(contactEndpoint, {
+        method: 'POST',
+        headers: { Accept: 'application/json' },
+        body: form,
+      });
+      if (!response.ok) throw new Error(`Contact request failed with status ${response.status}`);
+      formElement.reset();
+      setContactStatus('Solicitud enviada correctamente.');
+    } catch {
+      setContactStatus('No pudimos enviar la solicitud. Intenta nuevamente.');
+    } finally {
+      setContactSending(false);
     }
-    const subject = `Solicitud AgroIndex · ${String(form.get('empresa') || form.get('nombre') || 'Contacto')}`;
-    const body = [`Nombre: ${form.get('nombre')}`, `Empresa: ${form.get('empresa') || '—'}`, `Email: ${form.get('email')}`, '', String(form.get('solicitud'))].join('\n');
-    window.location.href = `mailto:${contactEmail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-    setContactStatus('Abrimos tu correo para completar el envío.');
   };
 
   if (loadError) return <main className="state-page"><h1>No pudimos cargar el historial.</h1><p>La fuente quedó temporalmente indisponible. Intenta nuevamente.</p></main>;
@@ -781,7 +796,7 @@ export default function Home() {
             <label>Empresa<input name="empresa" type="text" autoComplete="organization" /></label>
             <label>Email<input name="email" type="email" autoComplete="email" required /></label>
             <label className="contact-request">Solicitud<textarea name="solicitud" rows={3} required /></label>
-            <button type="submit">Enviar solicitud <span>→</span></button>
+            <button type="submit" disabled={contactSending}>{contactSending ? 'Enviando…' : 'Enviar solicitud'} <span>→</span></button>
             {contactStatus && <p className="contact-status" role="status">{contactStatus}</p>}
           </form>
         </section>

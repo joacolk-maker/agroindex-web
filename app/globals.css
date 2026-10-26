@@ -208,3 +208,5 @@ body{background:radial-gradient(circle at 78% 5%,#dceee8 0,transparent 28%),line
   .print-report .panel,.print-report .variation-section{box-shadow:none!important;break-inside:avoid}
   .print-report .panel{margin-top:10px}
 }
+/* Estado del envío del formulario */
+.contact-form button:disabled{opacity:.65;cursor:wait}
