@@ -42,12 +42,6 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
             `,
           }}
         />
-        <Script
-          type="module"
-          src="https://static.cloudflareinsights.com/beacon.min.js"
-          data-cf-beacon='{"token":"f5e523bb78cc4e9e9eb0412506a9085f"}'
-          strategy="afterInteractive"
-        />
       </body>
     </html>
   );
