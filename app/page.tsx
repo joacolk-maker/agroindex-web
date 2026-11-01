@@ -86,6 +86,13 @@ const marketCoordinates: Record<string, [number, number]> = {
   'Vega Central Mapocho de Santiago': [-33.43, -70.65], 'Vega Modelo de Temuco': [-38.73, -72.60], 'Vega Monumental Concepción': [-36.82, -73.03],
 };
 
+function trackAnalyticsEvent(name: string, parameters: Record<string, string | number>) {
+  const analyticsWindow = window as Window & {
+    gtag?: (command: string, eventName: string, eventParameters: Record<string, string | number>) => void;
+  };
+  analyticsWindow.gtag?.('event', name, parameters);
+}
+
 function parseDate(value: string) { return new Date(`${value}T12:00:00Z`); }
 function distanceKm(a: GeoPoint, b: [number, number]) { const earth = 6371; const lat1 = a.lat * Math.PI / 180; const lat2 = b[0] * Math.PI / 180; const dLat = (b[0] - a.lat) * Math.PI / 180; const dLon = (b[1] - a.lon) * Math.PI / 180; const value = Math.sin(dLat / 2) ** 2 + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLon / 2) ** 2; return earth * 2 * Math.atan2(Math.sqrt(value), Math.sqrt(1 - value)); }
 function isoDate(value: Date) { return value.toISOString().slice(0, 10); }
@@ -644,6 +651,7 @@ export default function Home() {
         body: form,
       });
       if (!response.ok) throw new Error(`Contact request failed with status ${response.status}`);
+      trackAnalyticsEvent('generate_lead', { form_name: 'contact' });
       formElement.reset();
       setContactStatus('Solicitud enviada correctamente.');
     } catch {
@@ -722,7 +730,19 @@ export default function Home() {
           <label>Calidad<select value={effectiveQuality} onChange={(event) => { setQuality(event.target.value); setUnit(''); }}><option>{allQualities}</option>{qualityOptions.map((item) => <option key={item}>{item}</option>)}</select></label>
           <label>Unidad com.<select value={effectiveUnit} onChange={(event) => setUnit(event.target.value)}><option value="" disabled>Selecciona una unidad</option>{unitOptions.map((item) => <option key={item}>{item}</option>)}</select></label>
           <div className="date-filter"><span>Rango de fechas</span><div><label><small>Fecha inicio</small><input type="date" min={manifest.min_data_date} max={to} value={from} onChange={(event) => setFrom(event.target.value)} /></label><label><small>Fecha fin</small><input type="date" min={from} max={manifest.max_data_date} value={to} onChange={(event) => setTo(event.target.value)} /></label></div></div>
-          <button className="filter-search-button" type="button" onClick={() => setHasSearched(true)}>Buscar</button>
+          <button className="filter-search-button" type="button" onClick={() => {
+            setHasSearched(true);
+            trackAnalyticsEvent('search_prices', {
+              product: effectiveProduct,
+              variety: effectiveVariety,
+              quality: effectiveQuality,
+              unit: effectiveUnit,
+              region,
+              market_count: selectedMarkets.length,
+              date_from: from,
+              date_to: to,
+            });
+          }}>Buscar</button>
         </div>
 
         <div className="filter-tools" aria-label="Atajos de filtros">
