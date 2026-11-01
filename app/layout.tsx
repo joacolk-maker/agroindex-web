@@ -2,6 +2,8 @@ import type { Metadata } from 'next';
 import Script from 'next/script';
 import './globals.css';
 
+const measurementId = 'G-LWXTFCXK3L';
+
 export const metadata: Metadata = {
   metadataBase: new URL('https://agroindex.cl/'),
   title: 'AgroIndex | Más información. Mejor decisión.',
@@ -24,6 +26,22 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
     <html lang="es">
       <body>
         {children}
+        <Script
+          src={`https://www.googletagmanager.com/gtag/js?id=${measurementId}`}
+          strategy="afterInteractive"
+        />
+        <Script
+          id="google-analytics"
+          strategy="afterInteractive"
+          dangerouslySetInnerHTML={{
+            __html: `
+              window.dataLayer = window.dataLayer || [];
+              function gtag(){window.dataLayer.push(arguments);}
+              gtag('js', new Date());
+              gtag('config', '${measurementId}');
+            `,
+          }}
+        />
         <Script
           type="module"
           src="https://static.cloudflareinsights.com/beacon.min.js"
